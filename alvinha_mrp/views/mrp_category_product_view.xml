@@ -1,0 +1,83 @@
+<odoo>
+
+    <record id="mrp_category_product_view_form" model="ir.ui.view">
+        <field name="name">mrp.category.product.form</field>
+        <field name="model">mrp.category.product</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_open_report_wizard" 
+                        string="Generar reportes" 
+                        type="object" 
+                        class="btn-primary"/>
+                </header>
+                <sheet>
+                    <field name="active" invisible="1" />
+                    <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <field name="name"></field>
+
+                        <field name="product_ids" domain="[('bom_ids', '!=', False)]">
+                            <list>
+                                <field name="name" />
+                                <field name="default_code" />
+                                <field name="uom_id" />
+                            </list>
+                        </field>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="available_day_ids"
+                            widget="many2many_checkboxes" />
+                            <label for="available_hour_from" string="Horario disponible" />
+                            <div class="o_row">
+                                <field name="available_hour_from" widget="float_time" nolabel="1" />
+                                <span> a </span>
+                                <field name="available_hour_to" widget="float_time" nolabel="1" />
+                            </div>
+                            <field name="production_manager" />
+                        </group>
+                    </group>
+                    <group>
+                        <separtor string="Envio de correos" />
+                        <label for="partner_ids" />
+                        <field name="partner_ids" colspan="2" widget="many2many_tags" />
+                        <field name="hours_1" widget="float_time"/>
+                        <field name="hours_2" widget="float_time" />
+                        <field name="hours_3" widget="float_time" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="mrp_category_product_view_list" model="ir.ui.view">
+        <field name="name">mrp.category.product.list</field>
+        <field name="model">mrp.category.product</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="active" column_invisible="1" />
+                <field name="sequence" widget="handle" nolabel="1" />
+                <field name="name"></field>
+                <field name="product_ids" />
+                <field name="available_day_ids" widget="many2many_tags" />
+                <field name="available_hour_from" widget="float_time" optional="show" />
+                <field name="available_hour_to" widget="float_time" optional="show" />
+            </list>
+        </field>
+    </record>
+    <record id="action_mrp_category_product" model="ir.actions.act_window">
+        <field name="name">Manufactura: Categoria Producto</field>
+        <field name="res_model">mrp.category.product</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registre una categoria de manufactura.
+            </p>
+            <div>
+                <span>Estas categorias apareceran en el formulario web para crear ordenes de producción</span>
+            </div>
+        </field>
+    </record>
+</odoo>

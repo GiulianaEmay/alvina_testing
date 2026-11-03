@@ -1,0 +1,36 @@
+<odoo>
+    <template id="portal_my_orders"
+        inherit_id="sale.portal_my_orders">
+
+        <!-- Header -->
+        <xpath expr="//thead/tr/th[@name='order_total']" position="before">
+            <th class="text-end">Documento Origen</th>
+        </xpath>
+
+        <!-- Filas -->
+        <xpath expr="//t[@t-foreach='orders']/tr/td[@name='order_amount_total']" position="before">
+            <td name="sale_origin" class="text-end">
+                <span t-field="order.origin"
+                     />
+            </td>
+        </xpath>
+
+    </template>
+    <template id="portal_my_quotations"
+        inherit_id="sale.portal_my_quotations">
+
+        <!-- Header -->
+        <xpath expr="//thead/tr" position="inside">
+            <th class="text-end">Documento Origen</th>
+        </xpath>
+
+        <!-- Filas -->
+        <xpath expr="//t[@t-foreach='quotations']/tr" position="inside">
+            <td name="sale_origin" class="text-end">
+                <span t-field="order.origin"
+                     />
+            </td>
+        </xpath>
+
+    </template>
+</odoo>

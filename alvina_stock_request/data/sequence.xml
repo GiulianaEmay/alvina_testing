@@ -1,0 +1,9 @@
+<odoo noupdate="1">
+    <record id="sequence_request" model="ir.sequence">
+        <field name="name">Solicitud de insumos ALVIÑA</field>
+        <field name="code">alvina.stock.request</field>
+        <field name="prefix">INS/SOL/%(year)s/</field>
+        <field name="padding">6</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

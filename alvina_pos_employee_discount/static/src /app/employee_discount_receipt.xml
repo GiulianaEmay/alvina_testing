@@ -1,0 +1,10 @@
+<templates xml:space="preserve">
+    <t t-name="alvina.OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('receipt-total')]" position="before">
+            <div t-if="order.alvina_amount" class="alvina-receipt-discount">
+                <div>Total original (incl. impuestos)<span class="pos-receipt-right-align" t-out="formatCurrency(order.alvina_original_total)"/></div>
+                <div>Descuento Colaborador<span class="pos-receipt-right-align" t-out="formatCurrency(order.alvina_amount)"/></div>
+            </div>
+        </xpath>
+    </t>
+</templates>

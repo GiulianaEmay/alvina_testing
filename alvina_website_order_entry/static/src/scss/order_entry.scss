@@ -1,0 +1,50 @@
+// Colour used by the supplied alvinha_mrp order form heading.
+header .alvina-order-entry {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max-content;
+    padding: 0 .375rem;
+
+    .alvina-order-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--alvina-order-color, #681412);
+        border: 1px solid var(--alvina-order-color, #681412);
+        color: #fff;
+        // Use the theme's btn btn-primary sizing, like the Contact Us CTA.
+        // Prevent menu text-wrap utilities from splitting this label.
+        white-space: nowrap !important;
+        width: max-content;
+        min-width: max-content;
+        flex-shrink: 0;
+        text-align: center;
+
+        &:hover,
+        &:focus-visible {
+            color: #fff;
+            text-decoration: underline;
+            outline: 2px solid currentColor;
+            outline-offset: -4px;
+        }
+    }
+}
+
+// Expand only the main desktop navbar, not page content or the mobile drawer.
+@media (min-width: 992px) {
+    header .navbar > .container {
+        width: 100%;
+        max-width: none;
+        padding-inline: clamp(.75rem, 1.5vw, 1.5rem);
+    }
+}
+
+@media (max-width: 991.98px) {
+    header .alvina-order-entry {
+        align-self: flex-start;
+        padding: .25rem 0;
+    }
+}

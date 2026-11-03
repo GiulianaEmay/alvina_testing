@@ -1,0 +1,48 @@
+<odoo>
+    <record id="mrp_category_product_wizard_list" model="ir.ui.view">
+        <field name="name">mrp.category.product.wizard.list</field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="mrp_category_id" />
+                <field name="date" />
+
+            </list>
+        </field>
+    </record>
+    <record id="mrp_category_product_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.category.product.wizard.form</field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="mrp_category_id" />
+                        <field name="date" />
+                    </group>
+
+                </sheet>
+                <footer>
+                    <button name="action_generete_report" 
+                    string="Generar guía" type="object" class="btn-primary"/>
+                    <button name="action_generete_report_consolid" 
+                    string="Generar consolidado" type="object" class="btn-primary"/>
+                    <button name="action_generete_report_kitting" 
+                    string="Generar Kitting" type="object" class="btn-primary"/>
+                    <button name="action_generete_report_production" 
+                    string="Generar Producción" type="object" class="btn-primary"/>
+                    <button name="action_generete_report_bakery" 
+                    string="Generar Producción Pastelería" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_mrp_category_product_wizard" model="ir.actions.act_window">
+        <field name="name">Imprimir Reporte </field>
+        <field name="res_model">mrp.category.product.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

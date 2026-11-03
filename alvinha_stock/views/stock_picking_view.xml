@@ -1,0 +1,153 @@
+<odoo>
+    <record id="view_picking_form" model="ir.ui.view">
+        <field name="name">stock.picking.form.autocomplete.qty</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+
+                <button name="action_autocomplete_qty_done"
+                    type="object"
+                    string="Autocompletar cantidades"
+                    class="btn-info "
+                    invisible="state not in ['confirmed', 'assigned',]"
+                />
+                
+                <button name="action_send_delivery_guide_purchase" type="object" string="Generar guía de remisión (compra)  " invisible="state != 'done' or country_code != 'PE' or picking_type_code != 'incoming' or l10n_pe_edi_status"/>
+
+
+            </xpath>
+            <div class="oe_button_box" position="inside">
+                <button name="action_open_sales_register"
+                    type="object"
+                    invisible="state not in ['done', ]"
+                    class="btn-primary" >
+                    <div class="o_stat_info">
+                        <span class="">Registrar ventas</span>
+                    </div>
+                </button>
+            </div>
+
+        </field>
+    </record>
+
+    <record id="stock_picking_sales_view" model="ir.ui.view">
+        <field name="name">stock.picking.sales.form</field>
+        <field name="model">stock.picking</field>
+        <field name="arch" type="xml">
+
+            <form string="Registro de ventas">
+                <sheet>
+                    <group>
+                        <field name="name" />
+                        <field name="pricelist_id" groups="base.group_system" />
+                    </group>
+                    <field name="move_ids" mode="list,kanban" widget="stock_move_one2many"
+                        add-label="Agregar un producto"  
+                        context="{'default_company_id': company_id, 'default_date': scheduled_date, 'default_date_deadline': date_deadline, 'picking_type_code': picking_type_code, 'default_picking_id': id, 'form_view_ref': 'stock.view_stock_move_operations', 'address_in_id': partner_id, 'default_picking_type_id': picking_type_id, 'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_partner_id': partner_id, 'picking_state': state}">
+
+                        <list
+                            create="false"
+                            string="Movimientos de stock" editable="bottom"
+                            delete="False"
+                            >
+                             
+                            <field name="company_id" column_invisible="True" can_create="True"
+                                can_write="True" />
+                            <field name="state" readonly="0" column_invisible="True"
+                                  />
+                            <field name="picking_type_id" column_invisible="True"   />
+                            <field name="location_id" column_invisible="True"  
+                                 />
+                            <field name="location_dest_id" column_invisible="True" />
+                            <field name="partner_id" column_invisible="True"
+                                readonly="state == 'done'"  />
+                            <field name="picking_code" column_invisible="True"   />
+                            <field name="show_details_visible" column_invisible="True" />
+                            <field name="additional" column_invisible="True" />
+                            <field name="move_lines_count" column_invisible="True" />
+                            <field name="is_storable" column_invisible="True" />
+                            <field name="has_tracking" column_invisible="True"   />
+                            <field name="product_id" context="{'default_is_storable': True}"
+                                required="1"
+                                readonly="(state != 'draft' and not additional) or move_lines_count &gt; 0"
+                                force_save="1" widget="move_product_label_field"  
+                                can_create="True" can_write="True" />
+                            <field name="forecast_availability" string=""
+                                widget="forecast_widget"
+                                column_invisible="parent.state in ('cancel', 'done') or parent.picking_type_code not in ['internal', 'outgoing']"
+                                />
+                            <field name="packaging_uom_qty" optional="hide" />
+                            <field name="packaging_uom_id" optional="hide"  />
+                            <field name="location_final_id" optional="hide"   />
+                            <field name="description_picking" string="Descripción"
+                                optional="show" />
+                            <field name="date" optional="hide"   />
+                            <field name="date_deadline" optional="hide"   />
+                            <field name="is_quantity_done_editable" column_invisible="True" />
+                            <field name="show_quant" column_invisible="True" />
+                            <field name="show_lots_text" column_invisible="True" />
+                            <field name="show_lots_m2o" column_invisible="True" />
+                            <field name="is_initial_demand_editable" column_invisible="True" />
+                            <field name="display_import_lot" column_invisible="True" />
+                            <field name="has_lines_without_result_package"
+                                column_invisible="True" />
+                            <field name="package_ids" optional="hide" widget="package_m2m"
+                                width="150px" readonly="1" />
+                             
+                            <field name="forecast_expected_date" column_invisible="True"
+                                  />
+                            <field name="product_qty" readonly="1" column_invisible="True"
+                                  />
+                            
+                            <field name="product_lst_price" readonly="True" groups="base.group_system" />
+                            <field name="quantity" string="Cantidad"
+                                width="150"
+                                sum="Total cantidad"
+                                readonly="not is_quantity_done_editable"
+                                column_invisible="parent.state=='draft'"
+                                decoration-danger="product_uom_qty and quantity &gt; product_uom_qty and parent.state not in ['done', 'cancel']"
+                                  />
+                            <field name="qty_sold" readonly="1" width="170" sum="Cantidad vendido"
+                            />
+                            <field name="total_sold" readonly="1" width="170" sum="Total vendido"
+                            groups="base.group_system"
+                            />
+                            <field name="qty_remaining" width="160"  
+                            sum="Cantidad restante"
+                            />
+                            <field name="total_remaining" readonly="1" width="170" sum="Total restante"
+                            groups="base.group_system"
+                            />
+                            <field name="product_uom"
+                                readonly="state != 'draft' and not additional"
+                                options="{'no_open': True, 'no_create': True}"
+                                widget="many2one_uom"  can_create="True"
+                                can_write="True" />
+                            <field name="picked" optional="hide"
+                                column_invisible="parent.state=='draft'"  />
+                            <field name="lot_ids" widget="many2many_tags"
+                                column_invisible="parent.state == 'draft'"
+                                invisible="not show_details_visible or has_tracking == 'none'"
+                                optional="hide"
+                                options="{'create': [('parent.use_create_lots', '=', True)]}"
+                                context="{'default_company_id': company_id, 'default_product_id': product_id, 'active_picking_id': parent.id}"
+                                domain="[('product_id','=',product_id)]"  
+                                can_create="True" can_write="True" />
+                            
+                            <field name="scrap_id" column_invisible="True" readonly="True"
+                                data-used-by="decoration-muted=&quot;scrap_id or state == 'cancel' or (state == 'done')&quot; (list,None)" />
+                            <field name="allowed_uom_ids" column_invisible="True"
+                                readonly="True"
+                                data-used-by="domain=&quot;[('id', 'in', allowed_uom_ids)]&quot; (field,product_uom)" />
+                        </list>
+                    </field>
+                    <field name="id" invisible="1" />
+                    
+                </sheet>
+            </form>
+
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="alvina_stock_request.PickupCodeField">
+        <div class="o_alvina_pickup_code">
+            <CharField t-props="props"/>
+            <div t-if="!props.readonly" class="d-flex gap-2 flex-wrap mt-2">
+                <button type="button" class="btn btn-secondary" t-on-click="openCamera" t-att-disabled="state.busy">
+                    <i class="fa fa-camera me-1"/>Escanear con cámara
+                </button>
+                <button type="button" class="btn btn-secondary" t-on-click="selectImage" t-att-disabled="state.busy">
+                    <i class="fa fa-image me-1"/>Subir imagen
+                </button>
+                <input type="file" class="d-none" t-ref="imageInput" accept="image/png,image/jpeg,image/webp" t-on-change="onImageSelected"/>
+            </div>
+            <small t-if="!props.readonly" class="text-muted d-block mt-2">Use un lector USB/Bluetooth en el campo, la cámara o una imagen PNG, JPG, JPEG o WebP de hasta 5 MiB. La imagen se procesa en este navegador.</small>
+            <div t-if="state.busy" class="text-muted mt-2" role="status">Leyendo imagen…</div>
+            <div t-if="state.message" class="text-success mt-2" role="status" t-esc="state.message"/>
+            <div t-if="state.error" class="alert alert-warning mt-2 mb-0" role="alert" t-esc="state.error"/>
+        </div>
+    </t>
+    <t t-name="alvina_stock_request.PickupCameraDialog">
+        <Dialog title="title" size="'md'">
+            <div class="o_alvina_camera_reader">
+                <p>Apunte al QR o al código de barras. El texto leído se mostrará en el asistente para revisarlo.</p>
+                <select t-if="state.cameras.length &gt; 1" class="form-select mb-3" aria-label="Seleccionar cámara" t-on-change="onCameraChange" t-att-disabled="state.starting">
+                    <option t-foreach="state.cameras" t-as="camera" t-key="camera.id" t-att-value="camera.id" t-att-selected="camera.id === state.cameraId" t-esc="camera.label"/>
+                </select>
+                <video t-ref="video" class="w-100 rounded" autoplay="autoplay" muted="muted" playsinline="playsinline"/>
+                <div t-if="state.starting" class="text-muted mt-2" role="status">Iniciando cámara…</div>
+                <div t-if="state.error" class="alert alert-warning mt-2 mb-0" role="alert" t-esc="state.error"/>
+            </div>
+            <t t-set-slot="footer">
+                <button t-if="state.error" type="button" class="btn btn-secondary" t-on-click="startCamera" t-att-disabled="state.starting">Reintentar</button>
+                <button type="button" class="btn btn-primary" t-on-click="close">Cerrar cámara</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

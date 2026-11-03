@@ -1,0 +1,45 @@
+<odoo>
+
+    <record id="day_monday" model="alvinha.freq.day">
+        <field name="name">Lunes</field>
+        <field name="code">monday</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="day_tuesday" model="alvinha.freq.day">
+        <field name="name">Martes</field>
+        <field name="code">tuesday</field>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="day_wednesday" model="alvinha.freq.day">
+        <field name="name">Miércoles</field>
+        <field name="code">wednesday</field>
+        <field name="sequence">3</field>
+    </record>
+
+    <record id="day_thursday" model="alvinha.freq.day">
+        <field name="name">Jueves</field>
+        <field name="code">thursday</field>
+        <field name="sequence">4</field>
+    </record>
+
+    <record id="day_friday" model="alvinha.freq.day">
+        <field name="name">Viernes</field>
+        <field name="code">friday</field>
+        <field name="sequence">5</field>
+    </record>
+
+    <record id="day_saturday" model="alvinha.freq.day">
+        <field name="name">Sábado</field>
+        <field name="code">saturday</field>
+        <field name="sequence">6</field>
+    </record>
+
+    <record id="day_sunday" model="alvinha.freq.day">
+        <field name="name">Domingo</field>
+        <field name="code">sunday</field>
+        <field name="sequence">7</field>
+    </record>
+
+</odoo>

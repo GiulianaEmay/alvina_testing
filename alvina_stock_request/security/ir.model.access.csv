@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_request,request requester,model_alvina_stock_request,group_requester,1,1,1,1
+access_line,line requester,model_alvina_stock_request_line,group_requester,1,1,1,1
+access_department_read,department read,model_alvina_stock_department,group_requester,1,0,0,0
+access_department_config,department config,model_alvina_stock_department,group_config,1,1,1,1
+access_qr,qr requester,model_alvina_stock_qr_wizard,group_requester,1,1,1,1
+access_pickup,pickup warehouse,model_alvina_stock_pickup_wizard,group_warehouse,1,1,1,1
+access_cancel,cancel requester,model_alvina_stock_cancel_wizard,group_requester,1,1,1,1

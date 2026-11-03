@@ -1,0 +1,31 @@
+.o_alvina_pickup_code {
+    width: 100%;
+
+    .o_input {
+        font-family: monospace;
+        overflow-wrap: anywhere;
+    }
+}
+
+.o_alvina_camera_reader video {
+    min-height: 12rem;
+    max-height: 60vh;
+    object-fit: contain;
+    background: #161616;
+}
+
+// Preserve the bars and quiet zones on narrow screens; scroll instead of shrinking.
+.o_alvina_code128_receipt {
+    max-width: 100%;
+    overflow-x: auto;
+
+    .o_field_image {
+        width: 900px;
+        min-width: 900px;
+    }
+
+    img {
+        width: 900px;
+        max-width: none !important;
+    }
+}

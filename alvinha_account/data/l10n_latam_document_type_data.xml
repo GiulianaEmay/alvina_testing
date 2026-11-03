@@ -1,0 +1,14 @@
+<odoo>
+    <record model='l10n_latam.document.type' id='document_type_recibo'>
+        <field name='sequence'>90</field>
+        <field name='code'>01</field>
+        <field name='report_name'>Recibo</field>
+        <field name="report_name@es_419">Recibo</field>
+        <field name='name'>Recibo</field>
+        <field name="name@es_419">Recibo</field>
+        <field name='country_id' ref='base.pe' />
+        <field name='doc_code_prefix'>R</field>
+        <field name='internal_type'>invoice</field>
+    </record>
+
+</odoo>

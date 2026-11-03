@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="purchase_order_form" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form" />
+        <field name="arch" type="xml">
+            <!-- <xpath expr="//group[@class='oe_subtotal_footer']"
+                position="inside">
+                    <field name="total_qty"
+                    readonly="1" />
+
+                    <field name="qty_summary"
+                    readonly="1"
+                    widget="text" />
+
+
+            </xpath> -->
+            <xpath expr="//group[@class='oe_subtotal_footer']" position="after">
+                <group colspan="2">
+                    <div class="row mt-2 justify-content-end">
+                        <div class="col-auto">
+                            <label string="Cantidad Total"
+                                class="oe_inline" for="total_qty" />
+                            <field name="total_qty"
+                            class="d-inline"
+                                readonly="1"
+                                nolabel="1"/>
+                        </div>
+                    </div>
+                    
+                </group>
+                <group colspan="2">
+                    <div class="row mt-2 justify-content-end">
+                        <div class="col-auto">
+                            <label class="oe_inline fw-bold" for="qty_summary" />
+                            <div class="d-inline-block">
+                                <field name="qty_summary"
+                                
+                                    readonly="1"
+                                    widget="text"
+                                    nolabel="1"/>
+
+                            </div>
+                        </div>
+                    </div>
+                </group>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

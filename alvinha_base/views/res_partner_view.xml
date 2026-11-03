@@ -1,0 +1,26 @@
+<odoo>
+    <record id="view_partner_form" model="ir.ui.view">
+        <field name="name">res.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"></field>
+        <field name="arch" type="xml">
+            <notebook position="before">
+                <group>
+                    <!-- <field name="type_client" /> -->
+                    <field name="alias" />
+                    <field name="order_frequency" />
+                    <field name="distribution_priority" />
+                    <field name="type_client" placeholder="Ninguno" />
+                </group>
+            </notebook>
+            <xpath expr="//group/group[2]" position="after">
+                <div class="partner_type">
+                    <group col="4">
+                        <field name="is_supplier"/>
+                        <field name="is_customer"/>
+                    </group>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

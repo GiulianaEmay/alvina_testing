@@ -1,0 +1,51 @@
+<odoo>
+    <record id="qr_form" model="ir.ui.view">
+        <field name="name">alvina.stock.qr.wizard.form</field>
+        <field name="model">alvina.stock.qr.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Códigos de retiro">
+                <group><field name="request_id"/><field name="department_id"/></group>
+                <field name="line_ids">
+                    <list create="false" edit="false" delete="false">
+                        <field name="product_id"/><field name="quantity"/><field name="product_uom_id"/>
+                    </list>
+                </field>
+                <group><field name="image" widget="image" options="{'size': [280, 280]}"/><field name="code"/></group>
+                <div class="o_alvina_code128_receipt">
+                    <field name="code128_image" widget="image" options="{'size': [900, 180]}"/>
+                </div>
+                <group><field name="code128_code"/></group>
+                <p>Presente el QR o el Code 128 en almacén. Ambos permiten el mismo retiro y quedan invalidados después de entregar o anular. Puede volver a consultarlos mientras la solicitud esté pendiente. Solo un almacenero autenticado puede autorizar la entrega.</p>
+                <footer><button string="Cerrar" special="cancel"/></footer>
+            </form>
+        </field>
+    </record>
+    <record id="pickup_form" model="ir.ui.view">
+        <field name="name">alvina.stock.pickup.wizard.form</field>
+        <field name="model">alvina.stock.pickup.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Revisar y autorizar retiro">
+                <group><field name="code" widget="alvina_pickup_code" placeholder="Lea el QR o Code 128 con un lector, cámara, imagen o texto"/></group>
+                <group invisible="not request_id">
+                    <field name="request_id"/><field name="state"/><field name="requester_id"/><field name="department_id"/>
+                    <field name="company_id"/><field name="source_location_id"/><field name="destination_location_id"/>
+                </group>
+                <field name="line_ids" invisible="not request_id">
+                    <list create="false" edit="false" delete="false">
+                        <field name="product_id"/><field name="quantity"/><field name="product_uom_id"/>
+                        <field name="available_quantity"/>
+                    </list>
+                </field>
+                <p invisible="not request_id">Revise productos y cantidades. Las existencias se comprueban nuevamente al autorizar. Si falta stock, la entrega no se completa y ambos códigos siguen válidos.</p>
+                <footer>
+                    <button name="action_scan" type="object" string="Revisar solicitud" class="btn-primary"/>
+                    <button name="action_redeem" type="object" string="Autorizar y entregar" class="btn-primary" invisible="not request_id"/>
+                    <button string="Cerrar" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="cancel_form" model="ir.ui.view"><field name="name">alvina.stock.cancel.wizard.form</field><field name="model">alvina.stock.cancel.wizard</field><field name="arch" type="xml"><form string="Anular solicitud"><group><field name="request_id"/><field name="reason"/></group><p>La solicitud se conservará en el historial como anulada. Su QR y Code 128 dejarán de permitir el retiro. Si el almacén ya completó la entrega, no podrá anularla.</p><footer><button name="action_cancel" type="object" string="Confirmar anulación" class="btn-primary"/><button string="Cerrar" special="cancel"/></footer></form></field></record>
+    <record id="action_pickup" model="ir.actions.act_window"><field name="name">Autorizar retiro</field><field name="res_model">alvina.stock.pickup.wizard</field><field name="view_mode">form</field><field name="target">new</field></record>
+    <record id="action_cancel_request" model="ir.actions.act_window"><field name="name">Anular solicitud</field><field name="res_model">alvina.stock.cancel.wizard</field><field name="view_mode">form</field><field name="target">new</field></record>
+</odoo>

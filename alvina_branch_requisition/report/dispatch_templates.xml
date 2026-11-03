@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="dispatch_minimal_layout">
+        <html><head><meta charset="utf-8"/><title>Despacho valorizado</title></head>
+            <body><t t-out="body"/></body>
+        </html>
+    </template>
+    <record id="paperformat_dispatch" model="report.paperformat">
+        <field name="name">Alviña — Despacho A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">9</field>
+        <field name="margin_right">9</field>
+        <field name="dpi">90</field>
+    </record>
+    <record id="action_dispatch_request_report" model="ir.actions.report">
+        <field name="name">Orden de despacho valorizada</field>
+        <field name="model">alvina.branch.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvina_branch_requisition.dispatch_request</field>
+        <field name="report_file">alvina_branch_requisition.dispatch_request</field>
+        <field name="binding_model_id" ref="model_alvina_branch_request"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_dispatch"/>
+        <field name="print_report_name">'Despacho - %s' % object.name.replace('/', '-')</field>
+    </record>
+    <record id="action_dispatch_sale_report" model="ir.actions.report">
+        <field name="name">Orden de despacho valorizada — Industria</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvina_branch_requisition.dispatch_sale</field>
+        <field name="report_file">alvina_branch_requisition.dispatch_sale</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_dispatch"/>
+        <field name="print_report_name">'Despacho - %s' % object.name.replace('/', '-')</field>
+    </record>
+    <template id="dispatch_request">
+        <t t-call="web.html_container">
+            <t t-foreach="documents" t-as="d"><t t-call="alvina_branch_requisition.dispatch_document"/></t>
+        </t>
+    </template>
+    <template id="dispatch_sale">
+        <t t-call="web.html_container">
+            <t t-foreach="documents" t-as="d"><t t-call="alvina_branch_requisition.dispatch_document"/></t>
+        </t>
+    </template>
+    <template id="dispatch_document">
+        <div class="article page alvina_dispatch" t-att-data-oe-model="doc_model" t-att-data-oe-id="d['report_id']">
+            <style>
+                .alvina_dispatch {font-family: sans-serif; font-size: 10px; color: #242424;}
+                .alvina_dispatch h1 {font-size: 17px; color: #681412; margin: 12px 0;}
+                .alvina_dispatch h2 {font-size: 12px; margin: 14px 0 6px;}
+                .alvina_dispatch table {width: 100%; border-collapse: collapse;}
+                .alvina_dispatch th, .alvina_dispatch td {padding: 5px 3px; vertical-align: top;}
+                .alvina_dispatch thead {display: table-header-group;}
+                .alvina_dispatch .details th, .alvina_dispatch .details td {border: 1px solid #bbb;}
+                .alvina_dispatch .details th {background: #f2eeee;}
+                .alvina_dispatch .num {text-align: right; white-space: nowrap;}
+                .alvina_dispatch .note {white-space: pre-wrap;}
+                .alvina_dispatch tr {page-break-inside: avoid;}
+                .alvina_dispatch .muted {font-size: 9px; color: #555;}
+            </style>
+            <table><tr>
+                <td style="width: 23%;"><img t-if="d['logo']" t-att-src="d['logo']" style="max-height: 65px; max-width: 145px;"/></td>
+                <td><strong t-out="d['company']"/><br/><span t-if="d['company_vat']">RUC: <span t-out="d['company_vat']"/></span></td>
+                <td class="num">Emisión: <span t-out="d['printed_date']"/><br/>Moneda: <span t-out="d['currency']"/></td>
+            </tr></table>
+            <h1>ORDEN DE DESPACHO VALORIZADA — INDUSTRIA</h1>
+            <table class="details"><tbody>
+                <tr><td><strong>Sucursal:</strong> <span t-out="d['branch']"/> <span t-if="d['branch_code']">(<span t-out="d['branch_code']"/>)</span></td><td><strong>Compañía solicitante:</strong> <span t-out="d['requesting_company']"/></td></tr>
+                <tr><td><strong>Requerimiento:</strong> <span t-out="d['request']"/></td><td><strong>Almacén de salida:</strong> <span t-out="d['warehouse']"/></td></tr>
+                <tr><td><strong>OC:</strong> <span t-out="d['purchase'] or 'No generada'"/></td><td><strong>OV:</strong> <span t-out="d['sale'] or 'No generada'"/></td></tr>
+                <tr><td><strong>Fecha de solicitud:</strong> <span t-out="d['request_date']"/></td><td><strong>Fecha requerida:</strong> <span t-out="d['required_date']"/></td></tr>
+                <tr><td><strong>Entrega:</strong> <span t-out="d['delivery_state']"/></td><td><strong>Venta:</strong> <span t-out="d['commercial_state'] or 'Sin documento comercial'"/></td></tr>
+            </tbody></table>
+            <h2>Cantidades por producto</h2>
+            <table class="details"><thead><tr>
+                <th>Código / Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num">Reservado</th><th class="num">Entregado</th><th class="num">Recibido</th><th class="num">Faltante</th><th class="num">Cerrado con motivo</th>
+            </tr></thead><tbody>
+                <tr t-foreach="d['lines']" t-as="line">
+                    <td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td t-out="line['uom']"/>
+                    <td class="num" t-out="line['requested']"/><td class="num" t-out="line['prepared']"/><td class="num" t-out="line['delivered']"/><td class="num" t-out="line['received']"/><td class="num" t-out="line['pending']"/><td class="num" t-out="line['cancelled']"/>
+                </tr>
+            </tbody></table>
+            <p class="muted">Reservado no significa entregado. Entregado corresponde a salidas validadas de Industria, menos devoluciones; recibido corresponde a recepciones validadas por la sucursal.</p>
+            <h2>Valorización comercial</h2>
+            <table class="details"><thead><tr>
+                <th>Producto</th><th class="num">Precio unitario</th><th class="num">Desc. %</th><th>Impuestos</th><th class="num">Solicitado</th><th class="num">Entregado</th><th class="num">Faltante</th>
+            </tr></thead><tbody>
+                <tr t-foreach="d['lines']" t-as="line">
+                    <td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td class="num" t-out="line['price_display']"/><td class="num" t-out="line['discount']"/>
+                    <td t-out="line['taxes'] or ('Sin impuestos' if d['commercial_taxes'] else 'Sin tratamiento comercial registrado')"/>
+                    <td class="num" t-out="line['requested_display']"/><td class="num" t-out="line['delivered_display']"/><td class="num" t-out="line['pending_display']"/>
+                </tr>
+            </tbody></table>
+            <table class="details" style="margin-top: 12px;"><thead><tr><th>Concepto</th><th class="num">Solicitado</th><th class="num">Entregado</th><th class="num">Faltante</th></tr></thead><tbody>
+                <tr><td>Base sin impuestos</td><td class="num" t-out="d['totals']['requested']['untaxed_display']"/><td class="num" t-out="d['totals']['delivered']['untaxed_display']"/><td class="num" t-out="d['totals']['pending']['untaxed_display']"/></tr>
+                <tr><td>Impuestos configurados</td><td class="num" t-out="d['totals']['requested']['tax_display']"/><td class="num" t-out="d['totals']['delivered']['tax_display']"/><td class="num" t-out="d['totals']['pending']['tax_display']"/></tr>
+                <tr><td><strong>Total valorizado</strong></td><td class="num"><strong t-out="d['totals']['requested']['total_display']"/></td><td class="num"><strong t-out="d['totals']['delivered']['total_display']"/></td><td class="num"><strong t-out="d['totals']['pending']['total_display']"/></td></tr>
+            </tbody></table>
+            <p t-if="not d['commercial_taxes']" class="muted">Histórico sin venta vinculada: se muestran precios registrados en el requerimiento, sin añadir impuestos ni crear documentos comerciales.</p>
+            <p class="muted">Valor del saldo cerrado con motivo: <span t-out="d['totals']['cancelled']['total_display']"/>. Este saldo no se presenta como entregado.</p>
+            <h2 t-if="d['request_note'] or d['notes']">Observaciones y faltantes</h2>
+            <p t-if="d['request_note']" class="note" t-out="d['request_note']"/>
+            <p t-foreach="d['notes']" t-as="note" class="note"><strong><span t-out="note['picking']"/> — <span t-out="note['label']"/>:</strong> <span t-out="note['text']"/></p>
+            <p class="muted" style="margin-top: 18px;">Documento operativo de despacho. No es una factura ni acredita una entrega pendiente de validar en Inventario.</p>
+        </div>
+    </template>
+</odoo>

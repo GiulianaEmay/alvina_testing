@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<odoo noupdate="1">
+    <record id="sequence_request" model="ir.sequence">
+        <field name="name">Requerimientos Alviña</field>
+        <field name="code">alvina.branch.request</field>
+        <field name="prefix">ALV/</field>
+        <field name="padding">6</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

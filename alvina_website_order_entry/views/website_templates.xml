@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Verified against the official Odoo 19 website templates. The first
+         item precedes every standard menu item, including Contact Us. -->
+    <template id="navbar_order_entry" inherit_id="website.navbar_nav"
+              name="ALVIÑA: Realizar Pedido en el encabezado">
+        <xpath expr="//t[@t-out='0']" position="before">
+            <li class="nav-item alvina-order-entry" role="presentation">
+                <a href="/portal/production/new" role="menuitem"
+                   class="btn btn-primary alvina-order-button">Realizar Pedido</a>
+            </li>
+        </xpath>
+    </template>
+
+    <!-- Suppress existing standard menu entries for this same internal path.
+         No database menus are created, removed or reordered. -->
+    <template id="submenu_order_entry_deduplicate" inherit_id="website.submenu"
+              name="ALVIÑA: evitar enlaces de pedido duplicados">
+        <xpath expr="//li[@t-if]" position="attributes">
+            <attribute name="t-if" add="(submenu._clean_url() or '').split('?')[0].split('#')[0].rstrip('/') != '/portal/production/new'" separator=" and "/>
+        </xpath>
+        <xpath expr="//li[@t-elif]" position="attributes">
+            <attribute name="t-elif" add="(submenu._clean_url() or '').split('?')[0].split('#')[0].rstrip('/') != '/portal/production/new'" separator=" and "/>
+        </xpath>
+    </template>
+</odoo>

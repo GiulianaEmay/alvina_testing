@@ -1,0 +1,107 @@
+<odoo>
+    <template id="account_move_ticket_template">
+    <t t-call="web.basic_layout">
+        <t t-foreach="docs" t-as="o">
+            <div style="
+                width:80mm;
+                font-family: monospace;
+                font-size:12px;
+                padding:4px;
+            ">
+
+                <!-- Empresa -->
+                <t t-set="company_real" t-value="o.company_id.root_id" />
+                <div class="mt-2" style="text-align:center;">
+                    <h4 class="fw-bolder mb-1">ALVIÑA</h4>
+                    <strong t-esc="company_real.name"/><br/>
+                    <span t-esc="company_real.state_id.name"/> 
+                    - <span t-esc="company_real.city" />
+                    <br/>
+                    <span t-esc="company_real.vat"/> <br />
+                    Tel: <span t-esc="company_real.phone" /> 
+                </div>
+
+                <hr class="my-1" />
+                <div class="text-center">
+                    <h6 class="fw-bolder">
+                        <t t-if="o.l10n_latam_document_type_id">
+                            <t t-esc="o.l10n_latam_document_type_id.report_name" />
+                        </t>
+                    </h6>
+                    <h6 class="">
+                        <t t-out="o.name" />
+                    </h6>
+                    <strong></strong> <span t-esc="o.invoice_date"/><br/>
+                    <span>Usuario:</span> <span t-esc="o.create_uid.name"/><br/>
+                </div>
+
+
+                <hr class="my-1"/>
+
+                <!-- Documento -->
+                <div>
+                    <strong>Doc:</strong> <span t-esc="o.partner_id.vat"/><br/>
+                    <strong>Cliente:</strong><br/>
+                    <span t-esc="o.partner_id.name"/>
+                </div>
+
+                <hr class="my-1" />
+
+                <!-- Líneas -->
+                <table style="width:100%;">
+                    <t t-foreach="o.invoice_line_ids" t-as="l">
+                        <tr>
+                            <td colspan="2">
+                                <span t-esc="l.name"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span t-esc="l.quantity"/> x
+                                <span t-esc="l.price_unit"/>
+                            </td>
+                            <td style="text-align:right;">
+                                <span t-esc="l.price_subtotal"/>
+                            </td>
+                        </tr>
+                    </t>
+                </table>
+
+                <hr class="my-1" />
+                <div class="text-center">
+                    <strong>Op. Gravada:</strong>
+                    <span  t-esc="o.amount_untaxed"/>
+                </div>
+                <!--igv-->
+                <div class="text-center">
+                    <strong>IGV:</strong>
+                    <span  t-esc="o.amount_tax"/>
+                </div>
+                <!-- Totales -->
+                <div class="text-center">
+                    <strong>Total:</strong>
+                    <span  t-esc="o.amount_total"/>
+                </div>
+
+                <br/>
+                <!-- <div  id="link_qrcode" class="d-flex mb-3 avoid-page-break-inside justify-content-center">
+                    <t t-set="portal_qr_code" t-value="o._generate_portal_qr()"/>
+                    <div class="qrcode me-3 position-relative" id="qrcode_image">
+                        <a t-att-href="o.get_portal_url()" target="_blank" class="top-0 start-0 position-absolute w-100 h-100 z-1" />
+                        <p class="position-relative mb-0">
+                            <img t-att-src="portal_qr_code"/>
+                            
+                        </p>
+                    </div>
+                    
+                </div> -->
+                <div class="text-center">
+                    ¡Gracias por su compra!
+                </div>
+
+            </div>
+        </t>
+    </t>
+</template>
+
+</odoo>

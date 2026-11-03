@@ -1,0 +1,88 @@
+<odoo>
+    <record id="action_report_mo_overview_multi" model="ir.actions.client">
+        <field name="name">MO Overview Multi</field>
+        <field name="tag">mrp_mo_overview_multi</field>
+        <field name="context">{'model': 'report.mrp.report_mo_overview'}</field>
+    </record>
+
+    <record id="action_mo_overview_multi" model="ir.actions.server">
+        <field name="name">Vista General</field>
+        <field name="model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+                action = {
+                    "type": "ir.actions.client",
+                    "tag": "mrp_mo_overview_multi",
+                    "context": {
+                        "active_ids": records.ids,
+                        "active_id": records.ids[0],
+                    }
+                }
+        </field>
+    </record>
+
+    <record id="mrp_production_form_view" model="ir.ui.view">
+            <field name="name">mrp.production.form</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_form_view" />
+            <field name="arch" type="xml">
+                <form position="inside">
+                    <field name="can_edit_lines" invisible="1" />
+                </form>
+                <header position="inside">
+                    <button name="calculate_product_quantity" invisible="not (state == 'draft' and category_product_id!=False)" string="Recalcular cantidad" type="object" class="oe_highlight" 
+                    
+                     groups="mrp.group_mrp_manager" />
+                </header>
+
+                <notebook position="before">
+                    <group>
+                        <group>
+                            <field name="category_product_id" readonly="1" />
+                        </group>
+                    </group>
+                    <div role="alert" class=" alert alert-warning" invisible="state != 'draft' or not observation">
+                        <div>
+                            <field name="observation" nolabel="1" />
+                            <p class="mb-0 text-muted">
+                                Este cambio afectara al pedido de la surcural que se configuro.
+                            </p>
+                            <div class="d-block mt-1">
+                                <button type="object" name="action_increment_can" string="Aumentar cantidad" class="btn-sm btn-success" />
+
+                            </div>
+                        </div>
+                        <div>
+                            <field name="obs_negative" nolabel="1" />
+                            <p class="mb-0 text-muted">
+                                Este cambio afectara al pedido de la surcural que se configuro.
+                            </p>
+                            <div class="d-block mt-1">
+                                <button type="object" name="action_decrement_can" string="Quitar cantidad" class="btn-sm btn-danger" />
+
+                            </div>
+                        </div>
+                    </div>
+                </notebook>
+                <notebook position="inside">
+                    <page name="contact_lines" string="Cliente/Sucursal ">
+                        <field name="client_line_ids" 
+                        options="{'no_create': True, 'no_quick_create': True}"
+                        readonly="not can_edit_lines">
+                            <list>
+                                <field name="partner_id" />
+                                <field name="quantity" />
+                                <field name="sale_order_id" />
+                                <button name="action_open_sale_order" type="object"
+                                    icon="fa-external-link" title="Abrir orden de venta"
+                                    invisible="not sale_order_id" />
+                                <field name="observation" optional="hide" />
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </field>
+        </record>
+</odoo>

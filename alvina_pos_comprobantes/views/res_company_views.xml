@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_company_form_alvina" model="ir.ui.view">
+        <field name="name">res.company.form.alvina</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="ALVIÑA POS" name="alvina_pos" groups="base.group_system">
+                    <group string="Emisión inmediata desde el POS">
+                        <field name="alvina_edi_format_id" options="{'no_create': True}"/>
+                        <div class="text-muted" colspan="2">
+                            Primero se cobra y se imprime el ticket de atención. Desde su pantalla de recibo,
+                            Boleta/Factura consulta el DNI/RUC y, al confirmar, factura el pedido original
+                            y lo envía mediante la integración
+                            electrónica SUNAT/OSE de Odoo. Después puede imprimir desde la misma ventana.
+                            Se utiliza el diario, la serie y el proveedor ya configurados en su POS.
+                            El formato oficial peruano se detecta automáticamente si está habilitado en el diario.
+                        </div>
+                    </group>
+                    <group string="Consulta de clientes con JSON.PE">
+                        <field name="alvina_jsonpe_enabled"/>
+                        <field name="alvina_jsonpe_profile"/>
+                        <field name="alvina_jsonpe_token" password="True"/>
+                        <div class="text-muted" colspan="2">
+                            En el perfil JSON.PE solo necesita el token y activar las consultas.
+                            DNI y RUC utilizan automáticamente sus parámetros y respuestas documentados.
+                            Guarde la configuración antes de probar desde el POS.
+                        </div>
+                    </group>
+                    <group string="Configuración avanzada" invisible="alvina_jsonpe_profile != 'custom'">
+                        <field name="alvina_jsonpe_dni_url" placeholder="https://api.json.pe/api/dni"/>
+                        <field name="alvina_jsonpe_ruc_url" placeholder="https://api.json.pe/api/ruc"/>
+                        <field name="alvina_jsonpe_method"/>
+                        <field name="alvina_jsonpe_parameter"/>
+                        <field name="alvina_jsonpe_number_path" placeholder="Ruta JSON del documento devuelto"/>
+                        <field name="alvina_jsonpe_name_path" placeholder="Ruta JSON del nombre completo normalizado"/>
+                        <field name="alvina_jsonpe_street_path" placeholder="Ruta JSON de dirección fiscal"/>
+                        <field name="alvina_jsonpe_auth_header"/>
+                        <field name="alvina_jsonpe_auth_prefix"/>
+                    </group>
+                    <group>
+                        <div class="text-muted" colspan="2">
+                            Preferir ALVINA_JSONPE_TOKEN en el entorno del servidor. El campo de respaldo
+                            se almacena en la base de datos; no se exporta al POS. Proteger copias de seguridad.
+                            La consulta de identidad no emite comprobantes ni confirma aceptación SUNAT.
+                        </div>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

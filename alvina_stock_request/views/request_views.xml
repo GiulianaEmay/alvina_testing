@@ -1,0 +1,37 @@
+<odoo>
+    <record id="request_list" model="ir.ui.view">
+        <field name="name">alvina.stock.request.list</field><field name="model">alvina.stock.request</field>
+        <field name="arch" type="xml"><list decoration-success="state == 'done'" decoration-muted="state == 'cancelled'"><field name="name"/><field name="requester_id"/><field name="department_id"/><field name="submitted_at"/><field name="state" widget="badge"/><field name="company_id" groups="base.group_multi_company"/></list></field>
+    </record>
+    <record id="request_form" model="ir.ui.view">
+        <field name="name">alvina.stock.request.form</field><field name="model">alvina.stock.request</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" type="object" string="Enviar solicitud" class="btn-primary" invisible="state != 'draft' or requester_id != uid"/>
+                    <button name="action_show_qr" type="object" string="Ver códigos de retiro" class="btn-primary" invisible="state != 'submitted' or requester_id != uid"/>
+                    <button name="%(action_cancel_request)d" type="action" string="Anular solicitud" context="{'default_request_id': id}" invisible="state not in ['draft', 'submitted'] or requester_id != uid"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,done"/>
+                </header>
+                <sheet>
+                    <h1><field name="name"/></h1>
+                    <group>
+                        <group string="Datos de la solicitud"><field name="company_id" readonly="state != 'draft' or requester_id != uid"/><field name="requester_id"/><field name="department_id" domain="[('company_id', '=', company_id)]" readonly="state != 'draft' or requester_id != uid" options="{'no_create': True}"/><field name="note" readonly="state != 'draft' or requester_id != uid"/></group>
+                        <group string="Ruta de entrega">
+                            <div class="text-muted" colspan="2" invisible="state != 'draft'">La ruta se completa automáticamente al enviar la solicitud.</div>
+                            <field name="picking_id" groups="alvina_stock_request.group_warehouse"/><field name="picking_type_id"/><field name="source_location_id"/><field name="destination_location_id"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="state != 'draft' or requester_id != uid"><list editable="bottom"><field name="product_id" options="{'no_create': True}"/><field name="quantity"/><field name="product_uom_id"/></list></field>
+                    <group string="Trazabilidad"><field name="submitted_at"/><field name="delivered_by"/><field name="delivered_at"/><field name="cancelled_by"/><field name="cancelled_at"/><field name="cancellation_reason"/></group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="request_search" model="ir.ui.view">
+        <field name="name">alvina.stock.request.search</field><field name="model">alvina.stock.request</field>
+        <field name="arch" type="xml"><search><field name="name"/><field name="department_id"/><field name="requester_id"/><filter name="mine" string="Mis solicitudes" domain="[('requester_id', '=', uid)]"/><filter name="pending" string="Pendientes" domain="[('state', '=', 'submitted')]"/><group><filter name="department" string="Área" context="{'group_by': 'department_id'}"/><filter name="state" string="Estado" context="{'group_by': 'state'}"/></group></search></field>
+    </record>
+    <record id="action_requests" model="ir.actions.act_window"><field name="name">Requerimientos de insumos</field><field name="res_model">alvina.stock.request</field><field name="view_mode">list,form</field></record>
+</odoo>

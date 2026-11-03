@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<odoo>
+    <template id="form" name="Registra tu requerimiento">
+        <t t-call="website.layout">
+            <div class="container alvina-requisition my-5">
+                <h2 class="alvina-requisition-title mb-4">Registra tu requerimiento</h2>
+                <p t-if="error" class="alert alert-danger" role="alert" t-esc="error"/>
+                <p t-if="not branches" class="alert alert-warning">No tienes sucursales asignadas. Contacta al administrador.</p>
+                <form t-if="branches" id="alvina-request-form" action="/branch/requisition/submit" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="submission_key" t-att-value="submission_key"/>
+                    <input type="hidden" name="lines" id="alvina-lines" value="[]"/>
+                    <input type="hidden" id="alvina-catalog" t-att-value="catalogs"/>
+                    <div class="row">
+                        <div class="col-12 col-md-4 form-group mb-3">
+                            <label for="alvina-branch" class="form-label">Sucursal</label>
+                            <select id="alvina-branch" name="branch_id" class="form-select" t-att-disabled="len(branches) == 1">
+                                <option t-foreach="branches" t-as="branch" t-att-value="branch.id" t-esc="branch.name"/>
+                            </select>
+                            <input t-if="len(branches) == 1" type="hidden" name="branch_id" t-att-value="branches.id"/>
+                        </div>
+                        <div class="col-12 col-md-4 form-group mb-3">
+                            <label for="alvina-category" class="form-label">Categoría de producto</label>
+                            <select id="alvina-category" class="form-select">
+                                <option t-foreach="categories" t-as="category" t-att-value="category" t-esc="category"/>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 form-group mb-3">
+                            <label for="alvina-date" class="form-label">Fecha requerida</label>
+                            <input id="alvina-date" type="date" name="required_date" required="required" t-att-min="minimum_required_date" t-att-value="minimum_required_date" class="form-control"/>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h5>Productos</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mt-2">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Producto</th>
+                                        <th scope="col">Unidad</th>
+                                        <th scope="col">Cantidad solicitada</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alvina-products"/>
+                            </table>
+                        </div>
+                        <p id="alvina-empty" hidden="hidden">No hay productos habilitados en esta categoría.</p>
+                    </div>
+                    <label for="alvina-note" class="form-label mt-3">Observaciones</label>
+                    <textarea id="alvina-note" name="note" class="form-control"/>
+                    <button class="btn btn-primary mt-4" type="submit">Enviar requerimiento</button>
+                </form>
+            </div>
+        </t>
+    </template>
+    <template id="success" name="Requerimiento recibido">
+        <t t-call="website.layout">
+            <div class="container alvina-requisition my-5">
+                <h2 class="alvina-requisition-title mb-4">Requerimiento recibido</h2>
+                <p t-if="record" class="alert alert-success" role="status">
+                    Registrado:
+                    <span t-esc="record.name"/>
+                </p>
+                <a href="/branch/requisition/new">Nuevo requerimiento</a>
+            </div>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="production_form_date" inherit_id="alvinha_mrp.production_form"
+              name="ALVIÑA: fecha predeterminada y mínima de pedido">
+        <xpath expr="//form[@id='portal_production_form']//input[@name='date_order']"
+               position="attributes">
+            <attribute name="id">date_order</attribute>
+            <attribute name="t-att-value">today</attribute>
+            <attribute name="t-att-min">today</attribute>
+            <attribute name="required">1</attribute>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="supply_configuration_list" model="ir.ui.view">
+        <field name="name">alvina.supply.configuration.list</field>
+        <field name="model">alvina.supply.configuration</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="sales_user_id"/>
+                <field name="pricelist_id"/>
+                <field name="enabled"/>
+            </list>
+        </field>
+    </record>
+    <record id="supply_configuration_form" model="ir.ui.view">
+        <field name="name">alvina.supply.configuration.form</field>
+        <field name="model">alvina.supply.configuration</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="alert alert-info" role="status">
+                        Todas las sucursales se abastecen de la compañía Industria seleccionada.
+                        Elija registros existentes. Esta configuración no crea empresas ni amplía permisos.
+                    </div>
+                    <div class="alert alert-warning" role="status">
+                        Si está instalado el automatismo interempresa de Odoo, configure Industria para
+                        generar su venta a partir de la compra de la sucursal. Al enviar un requerimiento,
+                        Odoo genera y confirma la compra y la venta para preparar sus operaciones de Inventario.
+                        Si no se obtiene una única pareja válida, el envío se revierte.
+                        Las cantidades enviadas y recibidas se confirman por separado. No se generan facturas.
+                    </div>
+                    <group>
+                        <field name="name"/>
+                        <field name="enabled"/>
+                        <field name="company_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="sales_user_id" required="enabled"
+                               domain="[('share', '=', False), ('active', '=', True), ('company_ids', 'in', [company_id])]"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="pricelist_id" required="enabled"
+                               domain="[('active', '=', True), ('company_id', 'in', [False, company_id])]"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="binding_form_supply" model="ir.ui.view">
+        <field name="name">alvina.binding.form.supply</field>
+        <field name="model">alvina.branch.binding</field>
+        <field name="inherit_id" ref="alvina_branch_requisition.binding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="before">
+                <field name="branch_code"/>
+                <field name="internal_location_id" invisible="company_id != supply_company_id"
+                       domain="[('usage', '=', 'internal'), ('company_id', '=', company_id)]"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_supply_configuration" model="ir.actions.act_window">
+        <field name="name">Abastecimiento de Industria</field>
+        <field name="res_model">alvina.supply.configuration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_supply_configuration" name="Abastecimiento de Industria"
+              parent="purchase.menu_purchase_config" action="action_supply_configuration"
+              groups="alvina_branch_requisition.group_admin" sequence="51"/>
+</odoo>

@@ -1,0 +1,30 @@
+<odoo>
+
+    <record id="view_pos_session_tree_horario" model="ir.ui.view">
+        <field name="name">pos.session.tree.horario</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_tree"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="horario" readonly="1"/>
+            </xpath>
+
+        </field>
+    </record>
+
+
+    <record id="view_pos_session_form_horario" model="ir.ui.view">
+        <field name="name">pos.session.form.horario</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='config_id']" position="after">
+                <field name="horario" readonly="1"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

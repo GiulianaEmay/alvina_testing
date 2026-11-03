@@ -1,0 +1,56 @@
+<odoo>
+    <record id="action_report_guide" model="ir.actions.report">
+        <field name="name">Category Product (Guide)</field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvinha_mrp.guide_template</field>
+        <field name="report_file">alvinha_mrp.guide_template</field>
+        <field name="print_report_name">'Guia - %s - %s' % (object.mrp_category_id.name if object.mrp_category_id else '', object.date)</field>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="alvinha_base.paperformat_a4_portrait" />
+    </record>
+    <record id="mrp_by_center_worker_report" model="ir.actions.report">
+        <field name="name">Pedidos por centro de producción </field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvinha_mrp.consolidated_template</field>
+        <field name="report_file">alvinha_mrp.consolidated_template</field>
+        <field name="print_report_name">'Pedidos consolidados - %s - %s' % (object.mrp_category_id.name if object.mrp_category_id else '', object.date)</field>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="alvinha_base.paperformat_a3_landscape" />
+    </record>
+
+    <record id="mrp_production_kitting_report" model="ir.actions.report">
+        <field name="name">Ordenes de Kitting</field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvinha_mrp.kitting_template</field>
+        <field name="report_file">alvinha_mrp.kitting_template</field>
+        <field name="print_report_name">'Orden de Kitting - %s - %s' % (object.mrp_category_id.name if object.mrp_category_id else '', object.date)</field>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="alvinha_base.paperformat_a3_landscape" />
+    </record>
+
+    <record id="mrp_production_production_report" model="ir.actions.report">
+        <field name="name">Orden de producción </field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvinha_mrp.production_template</field>
+        <field name="report_file">alvinha_mrp.production_template</field>
+        <field name="print_report_name">'Orden de producción - %s - %s' % (object.mrp_category_id.name if object.mrp_category_id else '', object.date)</field>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="alvinha_base.paperformat_a4_landscape" />
+    </record>
+
+    <record id="mrp_production_bakery_report" model="ir.actions.report">
+        <field name="name">Orden de producción 2 (pastería) </field>
+        <field name="model">mrp.category.product.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvinha_mrp.report_bakery_template</field>
+        <field name="report_file">alvinha_mrp.report_bakery_template</field>
+        <field name="print_report_name">'Orden de producción 2 - %s - %s' % (object.mrp_category_id.name if object.mrp_category_id else '', object.date)</field>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="alvinha_base.paperformat_a4_landscape" />
+    </record>
+
+</odoo>

@@ -1,0 +1,5 @@
+<odoo noupdate="1">
+    <record id="default_rate" model="ir.config_parameter"><field name="key">alvina.discount_rate</field><field name="value">15</field></record>
+    <record id="default_limit" model="ir.config_parameter"><field name="key">alvina.weekly_limit</field><field name="value">100</field></record>
+    <record id="default_timezone" model="ir.config_parameter"><field name="key">alvina.timezone</field><field name="value">America/Lima</field></record>
+</odoo>

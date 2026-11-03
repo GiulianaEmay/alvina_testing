@@ -1,0 +1,22 @@
+<odoo>
+
+    <record id="view_pos_config_form_pm_hour" model="ir.ui.view">
+        <field name="name">pos.config.form.pm.hour</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[@id='restaurant_on_create']" position="after">
+
+                <div class="row mt16 "  >
+                    <setting>
+                            <field name="pm_start_hour" widget="float_time"/>
+                    </setting>
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo> 

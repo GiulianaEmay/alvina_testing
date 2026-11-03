@@ -1,0 +1,30 @@
+{
+    'name': 'Requerimientos',
+    'author': 'ALVIÑA',
+    'summary': 'Solicitudes con QR y Code 128, lectura universal y entrega autorizada',
+    'description': 'Solicitudes de insumos por departamento, traslados internos existentes, autorización exclusiva por almaceneros, anulación por el solicitante antes de entregar y trazabilidad multiempresa. Consultar README.md para instalación y pruebas.',
+    'version': '19.0.2.2.0',
+    'category': 'Inventory/Inventory',
+    'license': 'LGPL-3',
+    'depends': ['stock', 'mail'],
+    'external_dependencies': {'python': ['qrcode', 'reportlab']},
+    'assets': {
+        'web.assets_backend': [
+            'alvina_stock_request/static/src/js/code_reader.js',
+            'alvina_stock_request/static/src/js/pickup_code_field.js',
+            'alvina_stock_request/static/src/xml/pickup_code_field.xml',
+            'alvina_stock_request/static/src/scss/pickup_code_field.scss',
+        ],
+    },
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'data/sequence.xml',
+        'views/department_views.xml',
+        'wizard/wizard_views.xml',
+        'views/request_views.xml',
+        'views/menus.xml',
+    ],
+    'application': True,
+    'installable': True,
+}

@@ -1,0 +1,9 @@
+<odoo>
+    <data noupdate="1">
+
+        <record forcecreate="True" id="decimal_payment" model="decimal.precision">
+            <field name="name">Alvinha Report Decimal</field>
+            <field name="digits">3</field>
+        </record>
+    </data>
+</odoo>

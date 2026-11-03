@@ -1,0 +1,75 @@
+<odoo>
+    <record id="privilege_request" model="res.groups.privilege">
+        <field name="name">Requerimientos</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+    <record id="group_requester" model="res.groups">
+        <field name="name">Solicitante</field>
+        <field name="privilege_id" ref="privilege_request"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_warehouse" model="res.groups">
+        <field name="name">Almacenero autorizado</field>
+        <field name="privilege_id" ref="privilege_request"/>
+        <field name="implied_ids" eval="[(4, ref('group_requester')), (4, ref('stock.group_stock_user'))]"/>
+    </record>
+    <record id="group_config" model="res.groups">
+        <field name="name">Configuración de departamentos</field>
+        <field name="privilege_id" ref="privilege_request"/>
+        <field name="implied_ids" eval="[(4, ref('group_requester')), (4, ref('stock.group_stock_manager'))]"/>
+    </record>
+    <record id="request_company" model="ir.rule">
+        <field name="name">Solicitud: empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="request_own" model="ir.rule">
+        <field name="name">Solicitud: solicitante propio</field>
+        <field name="model_id" ref="model_alvina_stock_request"/>
+        <field name="groups" eval="[(4, ref('group_requester'))]"/>
+        <field name="domain_force">[('requester_id', '=', user.id)]</field>
+    </record>
+    <record id="request_warehouse" model="ir.rule">
+        <field name="name">Solicitud: almacenero de la empresa</field>
+        <field name="model_id" ref="model_alvina_stock_request"/>
+        <field name="groups" eval="[(4, ref('group_warehouse'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="line_company" model="ir.rule">
+        <field name="name">Líneas: empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_request_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="line_own" model="ir.rule">
+        <field name="name">Líneas: solicitante propio</field>
+        <field name="model_id" ref="model_alvina_stock_request_line"/>
+        <field name="groups" eval="[(4, ref('group_requester'))]"/>
+        <field name="domain_force">[('request_id.requester_id', '=', user.id)]</field>
+    </record>
+    <record id="line_warehouse" model="ir.rule">
+        <field name="name">Líneas: almacenero</field>
+        <field name="model_id" ref="model_alvina_stock_request_line"/>
+        <field name="groups" eval="[(4, ref('group_warehouse'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="department_company" model="ir.rule">
+        <field name="name">Departamentos: empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_department"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="qr_owner_company" model="ir.rule">
+        <field name="name">Asistente qr: propietario y empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_qr_wizard"/>
+        <field name="domain_force">[('create_uid', '=', user.id), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="pickup_owner_company" model="ir.rule">
+        <field name="name">Asistente pickup: propietario y empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_pickup_wizard"/>
+        <field name="domain_force">[('create_uid', '=', user.id), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="cancel_owner_company" model="ir.rule">
+        <field name="name">Asistente cancel: propietario y empresas habilitadas</field>
+        <field name="model_id" ref="model_alvina_stock_cancel_wizard"/>
+        <field name="domain_force">[('create_uid', '=', user.id), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

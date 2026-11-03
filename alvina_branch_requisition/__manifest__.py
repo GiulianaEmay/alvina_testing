@@ -1,0 +1,17 @@
+{
+    'name': 'Alviña - Requerimientos de sucursales',
+    'version': '19.0.3.1.0',
+    'author': 'Grupo Alviña',
+    'license': 'LGPL-3',
+    'depends': ['purchase', 'stock', 'purchase_stock', 'sale_management', 'sale_stock', 'portal', 'website'],
+    'data': ['security/groups.xml', 'security/ir.model.access.csv',
+             'security/rules.xml', 'security/commercial_rules.xml', 'security/dispatch_security.xml',
+             'data/sequence.xml', 'views/backend.xml',
+             'views/templates.xml', 'views/supply_configuration.xml',
+             'views/commercial_views.xml', 'views/fulfillment_views.xml', 'views/logistics_views.xml',
+             'views/dispatch_views.xml', 'report/dispatch_templates.xml', 'report/dispatch_note_templates.xml'],
+    'assets': {'web.assets_frontend': ['alvina_branch_requisition/static/src/form.js',
+                                      'alvina_branch_requisition/static/src/form.css']},
+    'installable': True,
+    'application': False,
+}

@@ -1,0 +1,22 @@
+<odoo>
+    <menuitem id="menu_mrp_category_product" name="Manufactura: Categoria producto" action="action_mrp_category_product" 
+    parent="mrp.menu_mrp_bom"
+    sequence="30"
+    /> 
+
+    <!-- Acción que redirige al formulario web -->
+    <record id="action_mrp_production_web_form" model="ir.actions.act_url">
+        <field name="name">Formulario web</field>
+        <field name="type">ir.actions.act_url</field>
+        <field name="url">/portal/production/new</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_quote_form"
+              name="Formulario Web"
+              parent="mrp.menu_mrp_manufacturing"
+              action="action_mrp_production_web_form"
+              sequence="40"
+              />
+
+</odoo>

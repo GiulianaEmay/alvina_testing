@@ -1,0 +1,6 @@
+<odoo>
+    <menuitem id="menu_root" name="Requerimientos" sequence="35" groups="group_requester" web_icon="alvina_stock_request,static/description/icon.png"/>
+    <menuitem id="menu_requests" name="Requerimientos de insumos" parent="menu_root" action="action_requests" sequence="10"/>
+    <menuitem id="menu_pickup" name="Autorizar retiro" parent="menu_root" action="action_pickup" sequence="20" groups="group_warehouse"/>
+    <menuitem id="menu_departments" name="Departamentos y rutas" parent="menu_root" action="action_departments" sequence="30" groups="group_config"/>
+</odoo>

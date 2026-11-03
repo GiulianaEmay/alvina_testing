@@ -1,0 +1,32 @@
+<templates xml:space="preserve">
+    <t t-name="alvina.EmployeeDiscountPopup">
+        <Dialog title="'DESCUENTO COLABORADOR'" size="'md'">
+            <div class="alvina-discount">
+                <p>Beneficio personal. Verifique presencialmente que el comprador sea el titular del DNI.</p>
+                <label for="alvina-dni">DNI del colaborador</label>
+                <div class="d-flex gap-2 mb-3">
+                    <input id="alvina-dni" class="form-control" inputmode="numeric" maxlength="8" autocomplete="off" t-model="state.dni" t-on-input="() => { state.quote = null; state.verified = false; }"/>
+                    <button class="btn btn-secondary" t-on-click="lookup" t-att-disabled="state.busy">Consultar</button>
+                </div>
+                <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+                <div t-if="state.quote">
+                    <p><strong>Colaborador: </strong><t t-esc="state.quote.name"/></p>
+                    <dl class="row">
+                        <dt class="col-7">Beneficio</dt><dd class="col-5"><t t-esc="state.quote.rate"/> %</dd>
+                        <dt class="col-7">Límite semanal</dt><dd class="col-5" t-esc="money(state.quote.limit)"/>
+                        <dt class="col-7">Utilizado / reservado en otras compras</dt><dd class="col-5" t-esc="money(state.quote.used)"/>
+                        <dt class="col-7">Disponible para esta compra</dt><dd class="col-5" t-esc="money(state.quote.available)"/>
+                        <dt class="col-7">Descuento de esta compra</dt><dd class="col-5 fw-bold" t-esc="money(state.quote.amount)"/>
+                    </dl>
+                    <label class="d-flex gap-2"><input type="checkbox" t-model="state.verified"/>He verificado presencialmente la identidad del titular.</label>
+                </div>
+                <p class="text-muted mt-3">Reserva por 10 minutos. Todo cambio exige volver a aplicar el beneficio. No se concede sin conexión.</p>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="apply" t-att-disabled="state.busy || !state.quote || !state.verified">APLICAR DESCUENTO</button>
+                <button t-if="props.order.alvina_operation" class="btn btn-danger" t-on-click="remove" t-att-disabled="state.busy">RETIRAR BENEFICIO</button>
+                <button class="btn btn-secondary" t-on-click="props.close" t-att-disabled="state.busy">CANCELAR</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

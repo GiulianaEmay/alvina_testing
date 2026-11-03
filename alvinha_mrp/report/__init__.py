@@ -1,0 +1,1 @@
+from . import mrp_category_product_templates

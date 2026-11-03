@@ -1,0 +1,15 @@
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mrp.res_config_settings_view_form" />
+        <field name="arch" type="xml">
+            <block name="process_operations_setting_container" position="inside">
+                <setting id="mrp_contact_id" string="Seleccione al contacto para aumentar/quitar cantidad de producción" 
+                help="Este contacto se usará para quitar o aumentar la cantidad que se va producir.">
+                    <field name="mrp_contact_id"/>
+                </setting>
+            </block>
+        </field>
+    </record>
+</odoo>

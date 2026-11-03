@@ -1,0 +1,19 @@
+.bg-alvinha {
+  --bs-bg-opacity: 1;
+  background-color: rgba(104, 20, 18, var(--bs-bg-opacity)) !important;
+}
+
+.text-alvinha {
+  --bs-text-opacity: 1;
+  color: rgba(104, 20, 18, var(--bs-text-opacity)) !important;
+}
+
+.break-inside-avoid {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.break-inside-always {
+  page-break-before: always;
+  break-before: always;
+}

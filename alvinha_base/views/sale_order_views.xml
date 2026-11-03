@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_order_form_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form.mrp.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+
+                <button
+                    name="action_view_mrp_productions"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-cogs"
+                    invisible="is_created_mrp == False">
+                    Ver producciones
+
+                </button>
+
+            </xpath>
+            <notebook position="before">
+                <group>
+                    <field name="is_from_mrp" invisible="1" />
+                    <field name="is_created_mrp" readonly="is_created_mrp" invisible="is_from_mrp" force_save="1" />
+                </group>
+            </notebook>
+
+        </field>
+    </record>
+
+</odoo>

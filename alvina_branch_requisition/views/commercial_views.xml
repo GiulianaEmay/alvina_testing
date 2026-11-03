@@ -1,0 +1,60 @@
+<odoo>
+    <record id="sale_order_supply_form" model="ir.ui.view">
+        <field name="name">sale.order.alvina.supply</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Abastecimiento de sucursal" invisible="not alvina_branch_request_id">
+                    <field name="alvina_branch_request_id" options="{'no_open': True}"/>
+                    <field name="alvina_branch_id" options="{'no_open': True}"/>
+                    <field name="alvina_buyer_company_id" options="{'no_open': True}"/>
+                    <field name="alvina_purchase_order_id" options="{'no_open': True}"/>
+                    <field name="alvina_required_date"/>
+                    <field name="alvina_delivery_state"/>
+                    <field name="alvina_request_note"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="purchase_order_supply_form" model="ir.ui.view">
+        <field name="name">purchase.order.alvina.supply</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Abastecimiento de Industria" invisible="not alvina_branch_request_id">
+                    <field name="alvina_branch_request_id" options="{'no_open': True}"/>
+                    <field name="alvina_sale_order_id" options="{'no_open': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="request_supply_form" model="ir.ui.view">
+        <field name="name">alvina.request.supply</field>
+        <field name="model">alvina.branch.request</field>
+        <field name="inherit_id" ref="request_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_send_to_industry" type="object" string="Enviar a Industria"
+                        class="btn-primary" groups="alvina_branch_requisition.group_requester"
+                        invisible="supply_flow or state != 'pending'"
+                        confirm="Se generará la compra y la venta con la lista de precios actual de Industria. Se conservará el requerimiento original."/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string="Flujo Industria" invisible="not supply_flow">
+                    <field name="supply_flow" invisible="1"/>
+                    <field name="operation_mode"/>
+                    <field name="sale_order_id" options="{'no_open': True}"/>
+                    <field name="delivery_state"/>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list" position="inside">
+                <field name="qty_prepared"/>
+                <field name="qty_received"/>
+                <field name="qty_cancelled"/>
+                <button name="action_cancel_balance" type="object" string="Cerrar saldo" groups="alvina_branch_requisition.group_keeper" invisible="qty_pending &lt;= 0"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

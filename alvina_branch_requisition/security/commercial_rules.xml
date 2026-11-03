@@ -1,0 +1,59 @@
+<odoo>
+    <record id="rule_supply_sales_assignment" model="ir.rule">
+        <field name="name">Alviña: ventas vinculadas de sucursales asignadas</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="domain_force">[('alvina_branch_request_id.supply_flow', '=', True), ('alvina_branch_request_id.supply_company_id', 'in', company_ids)] if user.has_group('alvina_branch_requisition.group_industry_logistics') else ['|', ('alvina_branch_request_id', '=', False), ('alvina_branch_request_id.branch_id.user_ids', 'in', user.id)]</field>
+    </record>
+    <record id="rule_supply_purchases_assignment" model="ir.rule">
+        <field name="name">Alviña: compras vinculadas de sucursales asignadas</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="domain_force">['|', ('alvina_branch_request_id', '=', False), ('alvina_branch_request_id.branch_id.user_ids', 'in', user.id)]</field>
+    </record>
+    <record id="rule_supply_sales_lines_assignment" model="ir.rule">
+        <field name="name">Alviña: líneas de ventas de sucursales asignadas</field>
+        <field name="model_id" ref="sale.model_sale_order_line"/>
+        <field name="domain_force">[('order_id.alvina_branch_request_id.supply_flow', '=', True), ('order_id.alvina_branch_request_id.supply_company_id', 'in', company_ids)] if user.has_group('alvina_branch_requisition.group_industry_logistics') else ['|', ('order_id.alvina_branch_request_id', '=', False), ('order_id.alvina_branch_request_id.branch_id.user_ids', 'in', user.id)]</field>
+    </record>
+    <!-- Group rules extend the standard "own documents" rule only inside the
+         linked-supply boundary enforced by the global rules above. -->
+    <record id="rule_industry_logistics_sales" model="ir.rule">
+        <field name="name">Alviña: logística comparte ventas de sucursales de Industria</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="groups" eval="[(4, ref('group_industry_logistics'))]"/>
+        <field name="domain_force">[('alvina_branch_request_id.supply_flow', '=', True), ('alvina_branch_request_id.supply_company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_industry_logistics_sales_lines" model="ir.rule">
+        <field name="name">Alviña: logística comparte líneas de ventas de sucursales de Industria</field>
+        <field name="model_id" ref="sale.model_sale_order_line"/>
+        <field name="groups" eval="[(4, ref('group_industry_logistics'))]"/>
+        <field name="domain_force">[('order_id.alvina_branch_request_id.supply_flow', '=', True), ('order_id.alvina_branch_request_id.supply_company_id', 'in', company_ids)]</field>
+    </record>
+    <!-- Sales analysis is a separate SQL model and does not inherit the order
+         rules. Restrict it even when a broad standard Sales group is present. -->
+    <record id="rule_industry_logistics_sales_report_scope" model="ir.rule">
+        <field name="name">Alviña: limitar análisis de logística a ventas de sucursales</field>
+        <field name="model_id" ref="sale.model_sale_report"/>
+        <field name="domain_force">[('alvina_sale_order_id.alvina_branch_request_id.supply_flow', '=', True), ('alvina_sale_order_id.alvina_branch_request_id.supply_company_id', 'in', company_ids)] if user.has_group('alvina_branch_requisition.group_industry_logistics') else [(1, '=', 1)]</field>
+    </record>
+    <record id="rule_industry_logistics_sales_report" model="ir.rule">
+        <field name="name">Alviña: logística comparte análisis de ventas de sucursales</field>
+        <field name="model_id" ref="sale.model_sale_report"/>
+        <field name="groups" eval="[(4, ref('group_industry_logistics'))]"/>
+        <field name="domain_force">[('alvina_sale_order_id.alvina_branch_request_id.supply_flow', '=', True), ('alvina_sale_order_id.alvina_branch_request_id.supply_company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_supply_purchase_lines_assignment" model="ir.rule">
+        <field name="name">Alviña: líneas de compras de sucursales asignadas</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="domain_force">['|', ('order_id.alvina_branch_request_id', '=', False), ('order_id.alvina_branch_request_id.branch_id.user_ids', 'in', user.id)]</field>
+    </record>
+    <record id="rule_supply_configuration_company" model="ir.rule">
+        <field name="name">Alviña: configurar Industria desde su compañía</field>
+        <field name="model_id" ref="model_alvina_supply_configuration"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_balance_cancellation_assignment" model="ir.rule">
+        <field name="name">Alviña: cierres de saldo de sucursales asignadas</field>
+        <field name="model_id" ref="model_alvina_branch_balance_cancellation"/>
+        <field name="domain_force">[('request_line_id.supply_company_id', 'in', company_ids)] if user.has_group('alvina_branch_requisition.group_industry_logistics') else [('company_id', 'in', company_ids), ('request_line_id.branch_id.user_ids', 'in', user.id)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dispatch_note_report" model="ir.actions.report">
+        <field name="name">Guía interna valorizada por despacho</field>
+        <field name="model">alvina.branch.dispatch</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alvina_branch_requisition.dispatch_note</field>
+        <field name="report_file">alvina_branch_requisition.dispatch_note</field>
+        <field name="paperformat_id" ref="paperformat_dispatch"/>
+        <field name="binding_model_id" ref="model_alvina_branch_dispatch"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Guia interna - %s' % object.name.replace('/', '-')</field>
+    </record>
+    <template id="dispatch_note">
+        <t t-call="web.html_container">
+        <t t-foreach="documents" t-as="document">
+            <t t-set="d" t-value="document['dispatch']"/>
+            <t t-set="r" t-value="document['receipt']"/>
+            <div class="article page" data-oe-model="alvina.branch.dispatch" t-att-data-oe-id="document['id']">
+                <style>
+                    body {font-family: sans-serif; color: #252525; font-size: 11px;}
+                    h1 {font-size: 19px; color: #681412;} h2 {font-size: 13px;}
+                    table {width: 100%; border-collapse: collapse; margin-top: 12px;}
+                    th,td {padding: 6px; border: 1px solid #bbb; vertical-align: top;}
+                    th {background: #f2eeee;} .num {text-align: right; white-space: nowrap;}
+                    .note {white-space: pre-wrap;} .muted {font-size: 10px; color:#555;}
+                    thead {display: table-header-group;} tr {page-break-inside:avoid;}
+                </style>
+                <img t-if="d['logo']" t-att-src="'data:image/png;base64,' + d['logo']" style="max-height:65px; max-width:150px;"/>
+                <h1>GUÍA INTERNA DE DESPACHO VALORIZADA</h1>
+                <strong t-out="d['company']"/> — <span t-out="d['company_vat']"/>
+                <table><tbody>
+                    <tr><td><strong>Guía:</strong> <span t-out="d['name']"/></td><td><strong>Despacho:</strong> <span t-out="d['picking']"/></td></tr>
+                    <tr><td><strong>Sucursal:</strong> <span t-out="d['branch']"/> (<span t-out="d['branch_code']"/>)</td><td><strong>Compradora:</strong> <span t-out="d['buyer_company']"/></td></tr>
+                    <tr><td><strong>Fecha de emisión:</strong> <span t-out="d['issued_date']"/></td><td><strong>Responsable:</strong> <span t-out="d['issued_by']"/></td></tr>
+                    <tr><td><strong>OC / OV:</strong> <span t-out="d['purchase']"/> / <span t-out="d['sale']"/></td><td><strong>Requerimiento:</strong> <span t-out="d['request']"/></td></tr>
+                    <tr><td><strong>Almacén de Industria:</strong> <span t-out="d['warehouse']"/></td><td><strong>Moneda:</strong> <span t-out="d['currency']"/></td></tr>
+                </tbody></table>
+                <h2>Productos de este despacho</h2>
+                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num">Despachado</th><th class="num">Precio</th><th class="num">Desc. %</th><th>Impuestos</th><th class="num">Valor</th></tr></thead><tbody>
+                    <tr t-foreach="d['lines']" t-as="line"><td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td t-out="line['uom']"/><td class="num" t-out="line['requested']"/><td class="num" t-out="line['shipped']"/><td class="num" t-out="line['price_display']"/><td class="num" t-out="line['discount']"/><td t-out="line['taxes'] or 'Sin impuestos'"/><td class="num" t-out="line['total_display']"/></tr>
+                </tbody></table>
+                <table><tbody><tr><td>Base sin impuestos</td><td class="num" t-out="d['totals_display']['untaxed']"/></tr><tr><td>Impuestos configurados</td><td class="num" t-out="d['totals_display']['tax']"/></tr><tr><td><strong>Valor de este despacho</strong></td><td class="num"><strong t-out="d['totals_display']['total']"/></td></tr></tbody></table>
+                <p class="note" t-if="d['notes']" t-out="d['notes']"/>
+                <p class="note" t-if="d['shortage_note']"><strong>Motivo de faltantes:</strong> <span t-out="d['shortage_note']"/></p>
+                <h2>Saldo del requerimiento al emitir esta guía</h2>
+                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num">Despachado neto acumulado</th><th class="num">Pendiente por despachar</th></tr></thead><tbody>
+                    <tr t-foreach="d.get('balances', [])" t-as="line"><td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td t-out="line['uom']"/><td class="num" t-out="line['requested']"/><td class="num" t-out="line['supplied']"/><td class="num" t-out="line['pending']"/></tr>
+                </tbody></table>
+                <h2>Recepción de la sucursal</h2>
+                <p t-if="r['state'] == 'pending'">Pendiente de confirmación. Lo despachado no se supone recibido.</p>
+                <t t-else="">
+                    <p><strong t-out="'Recepción conforme' if r['state'] == 'conform' else 'Recepción con diferencias'"/> — <span t-out="r['confirmed_date']"/> — <span t-out="r['confirmed_by']"/></p>
+                    <table><thead><tr><th>Producto</th><th class="num">Despachado</th><th class="num">Realmente recibido</th><th class="num">Diferencia</th></tr></thead><tbody><tr t-foreach="r['lines']" t-as="line"><td t-out="line['product']"/><td class="num" t-out="line['shipped']"/><td class="num" t-out="line['received']"/><td class="num" t-out="line['difference']"/></tr></tbody></table>
+                    <p class="note" t-out="r['note']"/>
+                </t>
+                <p class="muted">Documento interno, sin envío a SUNAT. No es una factura. Los precios y cantidades de despacho se conservaron al emitir esta guía. Una diferencia de recepción no vuelve a descontar ni modifica el saldo pendiente de despacho.</p>
+            </div>
+        </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,36 @@
+<odoo>
+
+    <record id="paperformat_ticket_80mm" model="report.paperformat">
+        <field name="name">Ticket 80mm</field>
+
+        <!-- Medidas en mm -->
+        <field name="default" eval="False" />
+        <field name="format">custom</field>
+        <field name="page_width">80</field>
+        <field name="page_height">0</field> <!-- 0 = largo dinámico -->
+
+        <!-- Márgenes -->
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">5</field>
+        <field name="margin_right">5</field>
+
+        <!-- Sin header / footer -->
+        <field name="header_line" eval="False" />
+        <field name="header_spacing">0</field>
+
+        <!-- DPI bajo para térmica -->
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_account_move_ticket" model="ir.actions.report">
+        <field name="name">Ticket Factura</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-html</field>
+        <field name="report_name">alvinha_account.account_move_ticket_template</field>
+        <field name="report_file">alvinha_account.account_move_ticket_template</field>
+        <field name="print_report_name">'Ticket - %s' % (object.name)</field>
+        <field name="paperformat_id" ref="alvinha_account.paperformat_ticket_80mm"/>
+    </record>
+
+</odoo>

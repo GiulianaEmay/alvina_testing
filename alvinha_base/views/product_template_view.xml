@@ -1,0 +1,60 @@
+<odoo>
+    <record id="product_template_only_form_view" model="ir.ui.view">
+        <field name="name">product.template.form</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view" />
+        <field name="arch" type="xml">
+            <group name="internal_notes" position="before">
+                <group>
+                    <group>
+                        <field name="unit_per_can" invisible="1" />
+                        <field name="unit_per_can_count" invisible="product_variant_count > 1" />
+                        <field name="unit_weight" invisible="product_variant_count > 1"/>
+                        <field name="units_produced_per_batch" invisible="product_variant_count > 1"/>
+                    </group>
+                </group>
+                
+            </group>
+            
+            
+        </field>
+    </record>
+
+    <record id="product_variant_easy_edit_view" model="ir.ui.view">
+        <field name="name">product.product.form</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_variant_easy_edit_view" />
+        <field name="arch" type="xml">
+            <group name="sales" position="after">
+                <group name="mrp" string="Fabricación">
+                    <field name="unit_per_can_count" />
+                    <field name="unit_weight" />
+                    <field name="units_produced_per_batch" />
+                </group>
+            </group>
+        </field>
+    </record>
+
+    <record id="product_normal_form_view" model="ir.ui.view">
+        <field name="name">product.product.form</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view" />
+        <field name="arch" type="xml">
+            <group name="internal_notes" position="before">
+                <group>
+                    <group>
+                        <field name="unit_per_can_count" />
+                        <field name="unit_weight" />
+                        <field name="units_produced_per_batch" />
+                    </group>
+                </group>
+                
+            </group>
+        </field>
+    </record>
+
+    <record id="mrp.product_template_action" model="ir.actions.act_window">
+             
+            <field name="context">{"search_default_goods": 1,"search_default_manufactured_products": 1, 'default_is_storable': True}</field>
+    </record>
+</odoo>

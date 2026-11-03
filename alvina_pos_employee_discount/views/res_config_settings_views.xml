@@ -1,0 +1,18 @@
+<odoo>
+    <record id="settings_alvina" model="ir.ui.view">
+        <field name="name">res.config.settings.alvina</field><field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='point_of_sale']" position="inside">
+                <block title="ALVIÑA — Descuento de colaboradores" groups="alvina_pos_employee_discount.group_discount_manager">
+                    <setting string="Habilitar en este punto de venta"><field name="pos_alvina_discount_enabled"/></setting>
+                    <setting string="Política global para todas las sucursales" help="Semana de lunes a domingo. Sin acumulación. Solo moneda PEN. Máximos: 15 % y S/ 100.">
+                        <div class="content-group"><label for="alvina_discount_rate"/><field name="alvina_discount_rate"/></div>
+                        <div class="content-group"><label for="alvina_weekly_limit"/><field name="alvina_weekly_limit"/></div>
+                        <div class="content-group"><label for="alvina_timezone"/><field name="alvina_timezone"/></div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

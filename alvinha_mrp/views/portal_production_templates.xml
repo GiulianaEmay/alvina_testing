@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="production_form" name="Website Order Production Form" >
+
+        <t t-call="website.layout">
+
+            <div class="container mt-5 mb-5">
+
+                <h2 class="mb-4" style="color: #681412;">Registra tu pedido</h2>
+
+                <!-- Mostrar error si existe -->
+                <t t-if="error">
+                    <div role="alert" class="alert alert-danger">
+                        <t t-esc="error"/>
+                    </div>
+                </t>
+
+                <!-- Formulario -->
+                <form action="/portal/production/create" method="POST" id="portal_production_form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div class="row">
+                        <t t-if="request.env.user.has_group('base.group_user')">
+                            <t t-if="request.env.user.has_group('sales_team.group_sale_manager')">
+                                <div class="col form-group mb-3">
+                                <label>Empresa</label>
+                                <select class="form-control" name="company_id">
+                                    <option value="" >Seleccione...</option>
+                                    <t t-foreach="companies" t-as="company">
+                                        <option t-att-value="company.id">
+                                            <t t-esc="company.name" />
+                                        </option>
+                                    </t>
+                                </select>
+                            </div> 
+                            <!-- Selector de Contacto -->
+                            <div class="col form-group mb-3">
+                                <label>Cliente/Sucursal</label>
+                                <select class="form-control" id="partners" name="partner_id">
+                                    <option value="">Seleccione...</option>
+                                    <t t-foreach="partners" t-as="p">
+                                        <option t-att-value="p.id"  >
+                                            <t t-esc="p.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div> 
+                            </t>
+                            <t t-else="">
+                                <div class="col form-group mb-3">
+                                    <label>Cliente/Sucursal</label>
+                                    <select class="form-control" id="partners" name="partner_id" readonly="1">
+                                        <option t-att-value="company_partner.id" selected="1"  >
+                                            <t t-if="company_partner.alias">
+                                                <t t-esc="company_partner.alias"/>
+    
+                                            </t>
+                                            <t t-else="">
+                                                <t t-esc="company_partner.display_name"/>
+    
+                                            </t>
+                                        </option>
+                                    </select>
+                                    <div id="contactHelpBlock" class="form-text">
+                                        * Este es el contacto de la empresa predetermina al cual usted pertenece
+                                    </div>
+                                    
+                                </div>
+    
+                            </t>
+
+                        </t>
+                        
+                        <t t-if="request.env.user.has_group('base.group_portal')">
+                            <div class="col form-group mb-3">
+                                <label>Cliente/Sucursal</label>
+                                <select class="form-control" id="partners" name="partner_id" readonly="1">
+                                    <option t-att-value="user_partner.id" selected="1"  >
+                                        <t t-if="user_partner.alias">
+                                            <t t-esc="user_partner.alias"/>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-esc="user_partner.display_name"/>
+                                        </t>
+                                    </option>
+                                </select>
+                                
+                            </div>
+                        </t>
+                        <!-- -->
+
+                        
+    
+                        <!-- Selector de Agrupador -->
+                        <div class="col form-group mb-3">
+                            <label>Agrupador de Producto</label>
+                            <select class="form-control" name="agrupador_id" id="agrupador_selector">
+                                <option value="">Seleccione...</option>
+                                <t t-foreach="agrupadores" t-as="a">
+                                    <option t-att-value="a.id"><t t-esc="a.name"/></option>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="col form-group mb-3">
+                            <label for="date_order">Fecha</label>
+                            <input name="date_order" class="form-control" type="date"
+                            t-att-min="today"
+                        required="1"
+                            />
+                        </div>
+
+                    </div>
+
+                    <!-- Contenedor donde se insertará la tabla dinámica -->
+                    <div id="productos_container" class="mt-4" >
+                        <h5>Productos </h5>
+
+                        <table class="table table-bordered table-sm mt-2">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad a producir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productos_table_body">
+                                 
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Campo oculto donde el JS enviará el JSON final -->
+                    <input type="hidden" name="lines" id="lines_json"/>
+
+                    <div style="display: none;" role="alert" class="alert alert-warning" id="msg_warning"></div>
+
+                    <button type="submit" class="btn btn-primary mt-4" id="btn_submit_prod">
+                        Crear Orden(es)
+                    </button>
+
+                </form>
+
+            </div>
+
+        </t>
+ 
+    </template>
+
+
+
+    <!-- ============================= -->
+    <!--      Vista de Éxito          -->
+    <!-- ============================= -->
+    <template id="website_production_success" name="Website Production Success" >
+
+        <t t-call="website.layout">
+
+            <div class="container mt-5 mb-5">
+
+                <h3 class="mb-3 alert alert-success">Órdenes de Producción creadas</h3>
+
+                <a href="/portal/production/new">Volver a crear órdenes de producción </a>
+            </div>
+
+        </t>
+
+    </template>
+
+</odoo>

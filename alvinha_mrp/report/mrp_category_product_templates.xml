@@ -1,0 +1,690 @@
+<odoo>
+
+    <template id="guide_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                    <div class="header ">
+                        <div class="row mt-1 pt-1">
+                            <div class="col-6" name="wizard_date">
+                                <h6 class=" mb-1 fw-bolder " style="color: #681412;"> Reporte del dia: <t t-out="doc.date" />
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page">
+                        <h3>Guía de <t t-if="doc.mrp_category_id" t-out="doc.mrp_category_id.name" />
+                        </h3>
+                        <p>
+                            <strong>Fecha:</strong>
+                            <span t-esc="doc.date" />
+                        </p>
+                        <t t-if="wizard_lines[doc_index]">
+                            <t t-set="wizard_data" t-value="wizard_lines[doc_index]" />
+                            <div class="w-100">
+                                <t t-foreach="wizard_data" t-as="wizard">
+
+                                    <div style="
+                                        width:48%;
+                                        display:inline-block;
+                                        vertical-align:top;
+                                        margin:0 1% 10px 1%;
+                                        page-break-inside: avoid;
+                                    ">
+                                        
+                                        <div class="text-center mb-1"  >
+                                            <h5 class="m-0"
+                                                t-out="wizard['partner_name']"/>
+                                        </div>
+                                        <table
+                                            class="table table-sm table-bordered mt-1 border border-dark">
+                                            <thead class="bg-secondary">
+                                                <tr>
+                                                    <th class="">
+                                                        <span class="ms-1">
+                                                            Producto
+                                                        </span>
+                                                    </th>
+                                                    <th class="text-end me-1">
+                                                        <span class="me-1">
+                                                            Cantidad
+                                                        </span>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="wizard['lines'].items()" t-as="line">
+                                                    <tr>
+                                                        <td>
+                                                            <span class="ms-1"
+                                                                t-esc="line[0].display_name" />
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span class="me-1"
+                                                                t-esc="'%.0f' % line[1]" />
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                            <tfoot class="bg-secondary">
+                                                <tr>
+                                                    <td>
+                                                        <div class="ms-1">
+                                                            Total
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="me-1"
+                                                            t-esc="'%.0f' % wizard['total']" />
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+
+                                    </div>
+                                </t>
+                            </div>
+
+
+                        </t>
+                        <t t-else="">
+                            <p class="text-muted">
+                                No existen órdenes de fabricación para esta fecha.
+                            </p>
+                        </t>
+    
+                    </div>
+                    <div class="footer">
+                        <div class="o_footer_content border-top pt-2 text-center">
+                            <div t-if="report_type == 'pdf'" class="text-muted" t-out="doc.mrp_category_id.name">(category name)</div>
+                            
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="consolidated_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-call="web.basic_layout">
+                    <div class="header ">
+                        <div class="row mt-1 pt-1">
+                            <div class="col-6" name="wizard_date">
+                                <h6 class=" mb-1 fw-bolder " style="color: #681412;"> Reporte del dia: <t t-out="wizard.date" />
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page">
+                        
+                        <t t-foreach="wizard_lines[wizard.id]" t-as="doc">
+
+                            <t t-foreach="doc['tables'].items()" t-as="t_item">
+
+                                <div class="break-inside-avoid"
+                                style="page-break-inside: avoid; break-inside: avoid;"
+                                t-if="len(t_item[1]['products'].values())">
+                                    <div class="text-center">
+                                        <h4 class=" fw-bolder" style="color: #681412">
+                                            <t t-out="wizard.mrp_category_id.name" /> - <span
+                                                t-esc="doc['workcenter'].name" />
+                                        </h4>
+                                    </div>
+    
+                                    <table class="table table-bordered  mb-3" >
+                                        <thead style="font-size: 20px;">
+                                            <tr class="" style="color: white; background-color: #681412;">
+                                                <th class="border border-dark fw-semibold" style="color: white;">
+                                                    <div class="ms-1  ">
+                                                        Producto
+                                                    </div>
+                                                </th>
+    
+                                                <t t-foreach="t_item[1]['users'].values()" t-as="user">
+                                                    <th class="border border-dark fw-semibold text-center" style="color: white;">
+                                                        <span
+                                                            t-if="user.distribution_priority and user.distribution_priority >= 0"
+                                                            t-esc="user.distribution_priority" />
+    
+                                                        <span t-esc="user.alias" t-if="user.alias" />
+                                                        <span t-esc="user.name" t-if="not user.alias" />
+                                                    </th>
+                                                </t>
+                                                <th class="text-center fw-semibold border border-dark" style="color: white;">Total</th>
+                                            </tr>
+                                        </thead>
+    
+                                        <tbody style="font-size: 20px;">
+                                            <t t-foreach="t_item[1]['products'].values()" t-as="product">
+                                                <tr>
+                                                    <!-- Nombre producto -->
+                                                    <td class="border border-dark">
+                                                        <span class="ms-1 fw-semibold" t-esc="product.name" />
+                                                    </td>
+    
+                                                    <!-- Cantidades por usuario -->
+                                                    <t t-foreach="t_item[1]['users'].values()" t-as="user">
+                                                        <td class="text-center border border-dark">
+                                                            <t t-set="key"
+                                                                t-value="(product.id, user.id)" />
+                                                            <span t-esc="int(t_item[1]['matrix'].get(key, 0))" 
+                                                             
+                                                            />
+                                                        </td>
+                                                    </t>
+                                                    <td class="border border-dark text-center fw-semibold" style="background-color: #681412; color: white;">
+                                                        <span
+                                                        
+                                                            t-esc="int(t_item[1]['matrix'].get((product.id, 0), 0))" />
+                                                    </td>
+    
+                                                </tr>
+                                            </t>
+    
+                                            <tr class=" fw-bolder" style="background-color: #681412; ">
+                                                <td style="color: white;">
+                                                    <div class="ms-1 fw-semibold">
+                                                        Total
+    
+                                                    </div>
+                                                </td>
+    
+                                                <t t-foreach="t_item[1]['users'].values()" t-as="user">
+                                                    <td class="text-center fw-semibold" style="color: white;">
+                                                        <t t-set="key"
+                                                            t-value="(0, user.id)" />
+                                                        <span t-esc="int(t_item[1]['matrix'].get(key, 0))" 
+                                                         
+                                                        />
+                                                    </td>
+                                                </t>
+                                                <td class="text-center fw-semibold" style="color: white;">
+                                                    <span t-esc="int(t_item[1]['matrix'].get((0, 0), 0))"
+                                                    
+                                                    />
+                                                </td>
+    
+                                            </tr>
+                                        </tbody>
+                                    </table>                 
+    
+                                </div>
+                            </t>
+                            <div style="page-break-before: always; break-before: always;"></div>
+                        </t>
+
+                        <t t-set="conformidades" t-value="wizard_conformidad[wizard.id]">
+                        </t>
+                        <div class="break-inside-avoid" 
+                        style="page-break-inside: avoid; break-inside: avoid;"
+                        t-if="len(conformidades)>0">
+                            <div class="text-center">
+                                <h4 class="" style="color: #681412;">
+                                    Conformidad de Pedidos Totales -
+                                    <t t-out="wizard.mrp_category_id.name" />
+                                </h4>
+
+                            </div>
+
+                            <table class="table table-bordered  mb-3" style="font-size: 20px;">
+                                <thead>
+                                    <tr class="border  fw-semibold" 
+                                    style="background-color: #681412; ">
+                                        <th class="border" style="color: white;">
+                                            <div class=" text-center" >
+                                                Producto
+                                            </div>
+                                        </th>
+                                        <th class="border" style="color: white;">
+                                            <div class="text-center">
+                                                Unidades
+                                            </div>
+                                        </th>
+                                        <th class="border" style="color: white;">
+                                            <div class=" text-center">
+                                                Alerta
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <t t-foreach="conformidades" t-as="mrp">
+                                        <tr class="">
+                                            <td class="border">
+                                                <span class="ms-1" 
+                                                t-esc="mrp['product_name']" />
+                                            </td>
+                                            <td class="border text-center">
+                                                <span
+                                                    t-esc="mrp['qty']" />
+                                            </td>
+                                            <td class="border text-center">
+                                                <span
+                                                    t-esc="mrp['observation']" />
+                                            </td> 
+
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>                 
+
+                        </div>
+                        
+                    </div>
+                    <div class="footer">
+                        <div class="o_footer_content border-top pt-2 text-center">
+                            <div t-if="report_type == 'pdf'" class="text-muted" t-out="wizard.mrp_category_id.name">(category name)</div>
+                            
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="kitting_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                    <div class="header ">
+                        <div class="row mt-1 pt-1">
+                            <div class="col-6" name="wizard_date">
+                                <h6 class=" mb-1 fw-bolder " style="color: #681412;"> Reporte del dia: <t t-out="doc.date" />
+                            </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page">
+    
+                            <h2 class="text-center" style="color: #681412">ORDEN DE KITTING GENERAL PANADERÍA - <t t-out="doc.mrp_category_id.name" /></h2>
+    
+                            <!-- TABLA DE INSUMOS -->
+                            <div class="break-inside-avoid text-center" style="">
+                                <table class="table table-sm  table-striped">
+                                    <thead>
+                                        <tr class=" " style="background-color: #681412; ">
+                                            <th class="border border-dark text-center fw-bolder " style="color: white;">Insumo</th>
+                                            <th class="border border-dark text-center fw-bolder text-white" style="color: white;">Cantidad</th>
+                                            <th class="border border-dark text-center fw-bolder text-white"
+                                            style="color: white;"
+                                            >Unidad de Medida</th>
+                                        </tr>
+                                    </thead>
+    
+                                    <tbody>
+                                        <t t-set="mos"
+                                            t-value="wizard_lines[doc.id]['materials']" />
+    
+                                        <t t-foreach="mos" t-as="m">
+                                            <tr>
+                                                <td class="border border-dark" >
+                                                    <div class="ms-1" t-esc="m['product']"></div>
+                                                </td>
+                                                <td class="border border-dark" >
+                                                    <div t-esc="m['qty']" class="ms-1 text-end"  />
+                                                </td>
+                                                <td class="border border-dark" >
+                                                    <div t-esc="m['uom']" class="ms-1 text-center" />
+                                                </td>
+                                            </tr>
+                                        </t>
+    
+                                    </tbody>
+                                </table>
+                            </div>
+    
+                            <!-- TABLAS POR CENTRO DE PRODUCCION -->
+                            <t t-foreach="wizard_lines[doc.id]['workcenters']" t-as="wc">
+    
+                                <div class="break-inside-always" />
+    
+                                <h3 class="ps-3 " style="color: #681412;">
+                                    Orden de Kitting de 
+                                    <t t-out="doc.mrp_category_id.name" /> - 
+                                    <t t-out="wc['name']" />
+                                </h3>
+    
+                                <table class="table table-bordered  table-striped">
+                                    <thead>
+                                        <tr class="fw-semibold">
+                                            <th class="border border-dark" 
+                                            style="background-color: #681412; color: white;">
+                                                <div class="fw-semibold text-center" style="color: white;">
+                                                    Producto
+                                                </div>
+                                            </th>
+                                            <t t-foreach="wc['inputs']" t-as="input">
+    
+                                                <th class="border border-dark" style="background-color: #681412; color: white;">
+                                                    <span class="fw-semibold" t-esc="input['name']" />
+                                                    <br />
+                                                    <small t-esc="input['uom']" />
+                                                </th>
+                                            </t>
+                                            <th class="ms-1 fw-semibold border border-dark" style="background-color: #681412; color: white;">
+                                                Total
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="font-size: 20px;">
+                                        <t t-foreach="wc['rows']" t-as="mo">
+                                            <tr>
+                                                <td class="border border-dark">
+                                                    <span class="ms-1" t-esc="mo['product']" />
+                                                </td>
+    
+                                                <t t-foreach="mo['values']" t-as="v">
+                                                    <td class="border border-dark">
+                                                        <div class="text-center" t-esc="v">
+    
+                                                        </div>
+                                                    </td>
+                                                </t>
+                                                <th class="border border-dark   fw-semibold " style="background-color: #681412; color: white;">
+                                                    <div class="ms-1"  t-out="mo['total']" />
+                                                </th>
+                                            </tr>
+                                        </t>
+                                        <tr class="fw-semibold" style="background-color: #681412; color: white;">
+    
+                                            <td  style="color: white; " class=" border border-dark">
+                                                <div class="ms-1">
+                                                    Total
+                                                </div>
+                                            </td>
+    
+                                            <t t-foreach="wc['column_totals']" t-as="ct">
+                                                <td class="border border-dark" style="color: white;">
+                                                    <div t-esc="ct"  
+                                                    class="text-end" />
+                                                </td>
+                                            </t>
+                                            <td class="border border-dark" t-esc="wc['grand_total']" style="color: white; " />
+    
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </t>
+    
+    
+                            <!-- FIRMAS -->
+    
+                            <div style="margin-top:80px; width:100%;">
+    
+                                <div style="float:left; text-align:center;"> ______________________________<br />
+                                    Supervisor de Distribución </div>
+    
+                                <div style="float:right; text-align:center;"> ____________________________<br />
+                                    Supervisor de Producción </div>
+    
+                            </div>
+    
+                    </div>
+                    <div class="footer">
+                        <div class="o_footer_content border-top pt-2 text-center">
+                            <div t-if="report_type == 'pdf'" class="text-muted" t-out="doc.mrp_category_id.name">(category name)</div>
+                            
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="production_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                    <div class="header ">
+                        <div class="row mt-1 pt-1">
+                            <div class="col-6" name="wizard_date">
+                                <h6 class=" mb-1 fw-bolder " style="color: #681412;"> Reporte del dia: <t t-out="doc.date" />
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page">
+                        <h2 class="text-center" style="color: #681412">Orden de Producción General - <t t-out="doc.mrp_category_id.name" /></h2>
+
+                        <div class="break-inside-avoid">
+                            <table class="table table-sm  table-striped">
+                                <thead>
+                                    <tr class=" " style="background-color: #681412; ">
+                                        <th class="border border-dark text-center fw-bolder " style="color: white;">Producto </th>
+                                        <th class="border border-dark text-center fw-bolder text-white" style="color: white;">Unidades/Lata </th>
+                                        <th class="border border-dark text-center fw-bolder text-white"
+                                        style="color: white;"
+                                        >Unidades</th>
+                                        <th class="border border-dark text-center fw-bolder text-white"
+                                        style="color: white;"
+                                        >Latas</th>
+                                        <th class="border border-dark text-center fw-bolder text-white"
+                                        style="color: white;"
+                                        >Kilos</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    <t t-foreach="wizard_lines[doc.id]['products'].values()" t-as="p">
+                                        <tr>
+                                            <td class="border border-dark" >
+                                                <div class="ms-1" t-esc="p['product_name']"></div>
+                                            </td>
+                                            <td class="border border-dark" >
+                                                <div t-esc="int(p['unit_per_can'])" class="text-center"  />
+                                            </td>
+                                            <td class="border border-dark" >
+                                                <div t-esc="int(p['units'])" class="text-center"  />
+                                            </td>
+                                            <td class="border border-dark" >
+                                                <div t-esc="int(p['can'])" class="ms-1 text-center" />
+                                            </td>
+                                            <td class="border border-dark" >
+                                                <div t-esc="p['kilos']" class="ms-1 text-center" />
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <tr style="background-color: #681412; ">
+                                            <td class="border border-dark" style="color: white;">
+                                                <div class="ms-1" >
+                                                    Total
+                                                </div>
+                                            </td>
+                                            <td class="border border-dark" style="color: white;" >
+                                                <div  class="text-center"  />
+                                            </td>
+                                            <t t-foreach="wizard_lines[doc.id]['total_product']" t-as="total">
+                                                <td class="border border-dark" style="color: white;" >
+                                                    <div t-esc="total" class="text-center"  />
+                                                </td>
+                                            </t>
+                                        </tr>
+
+
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TABLAS POR CENTRO DE PRODUCCION -->
+                        <t t-foreach="wizard_lines[doc.id]['workcenters'].values()" t-as="wc">
+
+                            <div class="break-inside-always" />
+
+                            <h3 class="ps-3 " style="color: #681412;">
+                                Orden de producción de 
+                                <t t-out="doc.mrp_category_id.name" /> - 
+                                <t t-out="wc['wc_name']" />
+                            </h3>
+
+                            <table class="table table-bordered  table-striped">
+                                <thead>
+                                    <tr class="fw-semibold">
+                                        <th class="border border-dark" 
+                                        style="background-color: #681412; color: white;">
+                                            <div class="fw-semibold text-center" style="color: white;">
+                                                Producto
+                                            </div>
+                                        </th>
+                                        <th class="border border-dark" style="background-color: #681412; color: white;">
+                                            Peso Unitario (g)
+                                        </th>
+                                        <th class="border border-dark" style="background-color: #681412; color: white;">
+                                            Unid. / Lata 
+                                        </th>
+                                        <th class="border border-dark" style="background-color: #681412; color: white;">
+                                            Unidades 
+                                        </th>
+                                        <th class="border border-dark" style="background-color: #681412; color: white;">
+                                            Latas
+                                        </th>
+                                        <th class="ms-1 fw-semibold border border-dark" style="background-color: #681412; color: white;">
+                                            Kilos
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="wc['products']" t-as="mo">
+                                        <tr>
+                                            <td class="border border-dark">
+                                                <span class="ms-1" 
+                                                t-esc="mo['product_name']" />
+                                            </td>
+
+                                            <td class="border border-dark">
+                                                <div class="text-center" t-esc="mo['unit_weight']">
+                                                </div>
+                                            </td>
+                                            <td class="border border-dark">
+                                                <div class="text-center" t-esc="mo['unit_per_can']">
+                                                </div>
+                                            </td>
+                                            <td class="border border-dark">
+                                                <div class="text-center" t-esc="mo['qty']">
+                                                </div>
+                                            </td>
+                                            <td class="border border-dark">
+                                                <div class="text-center" t-esc="mo['cans']">
+                                                </div>
+                                            </td>
+                                            <td class="border border-dark">
+                                                <div class="text-center" t-esc="mo['kilos']">
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <tr class="fw-semibold" style="background-color: #681412; color: white;">
+
+                                        <td  style="color: white; " class=" border border-dark">
+                                            <div class="ms-1">
+                                                Total
+                                            </div>
+                                        </td>
+                                        <td class="border border-dark" style="color: white;">
+                                            <div  class="text-end" />
+                                        </td>
+                                        <td class="border border-dark" style="color: white;">
+                                            <div  class="text-end" />
+                                        </td>
+                                        <t t-foreach="wc['total_products']" t-as="ct">
+                                            <td class="border border-dark" style="color: white;">
+                                                <div t-esc="ct" class="text-center" />
+                                            </td>
+                                        </t>
+                                        
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <!-- FIRMAS -->
+                        <div style="margin-top:80px; width:100%;">
+
+                            <div style="float:left; text-align:center;"> ______________________________<br />
+                                Supervisor de Distribución </div>
+
+                            <div style="float:right; text-align:center;"> ____________________________<br />
+                                Supervisor de Producción </div>
+
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <div class="o_footer_content border-top pt-2 text-center">
+                            <div t-if="report_type == 'pdf'" class="text-muted" t-out="doc.mrp_category_id.name">(category name)</div>
+                            
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_bakery_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-call="web.basic_layout">
+                    <div class="header ">
+                        <div class="row mt-1 pt-1">
+                            <div class="col-6" name="wizard_date">
+                                <h6 class=" mb-1 fw-bolder " style="color: #681412;"> Reporte del dia: <t t-out="wizard.date" />
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page">
+                        <div class="text-center">
+                            <h2  style="color: #681412">Lista de pedidos - 
+                                <t t-out="wizard.mrp_category_id.name" />
+                            </h2>
+                            
+                        </div>
+        
+                        <table class="table table-sm table-bordered mt-4">
+                            <thead >
+                                <tr class="" style="background-color: #681412; ">
+                                    <th class="text-center fw-bold"  style="width: 10%; color: white;">N°</th>
+                                    <th class="text-left " style="color: white;">Producto</th>
+                                    <th class="text-center fw-bold" style="width: 25%; color: white;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="wizard_data[wizard.id]['products']" t-as="line">
+                                    <tr>
+                                        <td class="text-center">
+                                            <span t-out="line_index +1 "/>
+                                        </td>
+                                        <td class="text-left">
+                                            <span t-out="line['name']"/>
+                                        </td>
+                                        <td class="text-center">
+                                            <span t-out="int(line['qty'])"/> 
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr class="fw-bold" style="background-color: #681412; ">
+                                    <td colspan="2" class="text-end fw-bold" style=" color: white;">
+                                        <span>Total</span>
+                                    </td>
+                                    <td class="text-center fw-bold" style=" color: white;">
+                                        <span t-out="wizard_data[wizard.id]['total']" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="footer">
+                        <div class="o_footer_content border-top pt-2 text-center">
+                            <div t-if="report_type == 'pdf'" class="text-muted" t-out="wizard.mrp_category_id.name">(category name)</div>
+                            
+                        </div>
+                    </div>
+                </t>
+                
+            </t>
+        </t>
+    </template>
+</odoo>
