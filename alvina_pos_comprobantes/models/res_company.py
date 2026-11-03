@@ -22,6 +22,7 @@ class ResCompany(models.Model):
     # Retained for database compatibility. Interactive issuance always runs now.
     alvina_edi_format_id = fields.Many2one(
         "account.edi.format", string="Formato electrónico SUNAT/OSE", groups="base.group_system",
+        compute="_compute_alvina_edi_format", inverse="_inverse_alvina_edi_format",
         help="Opcional si se detecta el formato de l10n_pe_edi en el diario del POS. "
              "Para otro proveedor, seleccione su formato electrónico peruano ya configurado.",
     )
@@ -43,6 +44,52 @@ class ResCompany(models.Model):
     alvina_jsonpe_auth_header = fields.Char(default="Authorization", groups="base.group_system")
     alvina_jsonpe_auth_prefix = fields.Char(default="Bearer", groups="base.group_system")
     alvina_jsonpe_token = fields.Char(string="Token de JSON.PE", copy=False, groups="base.group_system")
+
+    def _alvina_edi_parameter_key(self):
+        self.ensure_one()
+        return "alvina_pos_comprobantes.edi_format.company.%s" % self._origin.id
+
+    def _compute_alvina_edi_format(self):
+        """Read the optional override without requiring a new company column.
+
+        A code-only deployment must not break all company prefetches before an
+        administrator can upgrade Apps. Keep old column values readable when
+        that column already exists; new selections use Odoo's existing settings
+        storage. No schema change is performed during startup or a web request.
+        """
+        parameters = self.env["ir.config_parameter"].sudo()
+        company_ids = list({company._origin.id for company in self if isinstance(company._origin.id, int)})
+        legacy = {}
+        if company_ids:
+            self.env.cr.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_attribute
+                    WHERE attrelid = 'res_company'::regclass
+                      AND attname = 'alvina_edi_format_id'
+                      AND NOT attisdropped
+                )
+            """)
+            if self.env.cr.fetchone()[0]:
+                self.env.cr.execute("""
+                    SELECT id, alvina_edi_format_id FROM res_company WHERE id = ANY(%s)
+                """, [company_ids])
+                legacy = dict(self.env.cr.fetchall())
+        for company in self:
+            value = (parameters.get_param(company._alvina_edi_parameter_key())
+                     if isinstance(company._origin.id, int) else False)
+            # An explicit zero records a cleared setting and prevents a stale
+            # legacy column from restoring a selection the administrator removed.
+            format_id = int(value) if value and value.isascii() and value.isdecimal() else (
+                legacy.get(company._origin.id) if not value else False)
+            company.alvina_edi_format_id = self.env["account.edi.format"].browse(format_id or []).exists()
+
+    def _inverse_alvina_edi_format(self):
+        parameters = self.env["ir.config_parameter"].sudo()
+        for company in self:
+            if not isinstance(company.id, int):
+                continue
+            parameters.set_param(company._alvina_edi_parameter_key(),
+                                 str(company.alvina_edi_format_id.id or 0))
 
     def _alvina_get_edi_format(self, journal):
         """Use registered EDI formats, never assume a private localization method."""
