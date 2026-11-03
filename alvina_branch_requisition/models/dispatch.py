@@ -22,7 +22,7 @@ _RECEIVING = ContextVar('alvina_dispatch_receiving', default=frozenset())
 
 class BranchDispatch(models.Model):
     _name = 'alvina.branch.dispatch'
-    _description = 'Guía interna valorizada de despacho'
+    _description = 'Guía interna valorizada'
     _order = 'issued_date desc, id desc'
 
     name = fields.Char(required=True, readonly=True, copy=False)
@@ -35,6 +35,8 @@ class BranchDispatch(models.Model):
     issued_by = fields.Many2one('res.users', required=True, readonly=True)
     issued_date = fields.Datetime(required=True, readonly=True)
     snapshot_json = fields.Json(required=True, readonly=True, copy=False)
+    source = fields.Selection([('dispatch', 'Despacho'), ('receipt', 'Recepción')],
+        default='dispatch', required=True, readonly=True)
     line_ids = fields.One2many('alvina.branch.dispatch.line', 'dispatch_id', readonly=True, copy=False)
     receipt_state = fields.Selection([
         ('pending', 'Pendiente de recepción'), ('conform', 'Recepción conforme'),
@@ -50,7 +52,7 @@ class BranchDispatch(models.Model):
     def _compute_can_receive(self):
         for guide in self:
             guide.can_receive = bool(
-                guide.receipt_state == 'pending'
+                guide.source == 'dispatch' and guide.receipt_state == 'pending'
                 and self.env.user.has_group('alvina_branch_requisition.group_requester')
                 and self.env.user.has_group('purchase.group_purchase_user')
                 and guide.buyer_company_id in self.env.companies
@@ -72,6 +74,8 @@ class BranchDispatch(models.Model):
         self.ensure_one()
         self.check_access('read')
         guide = self.sudo()
+        if guide.source != 'dispatch':
+            raise ValidationError(_('La recepción de esta guía ya fue validada desde su orden de compra.'))
         if (not self.env.user.has_group('alvina_branch_requisition.group_requester')
                 or not self.env.user.has_group('purchase.group_purchase_user')
                 or guide.buyer_company_id not in self.env.companies
@@ -100,7 +104,8 @@ class BranchDispatch(models.Model):
         self.ensure_one()
         guide = self.sudo()
         quantities = {line.request_line_id.id: 0.0 for line in guide.line_ids}
-        receipts = self.env['stock.picking'].sudo().search([('alvina_dispatch_id', '=', self.id)])
+        receipts = (guide.picking_id if guide.source == 'receipt' else
+                    self.env['stock.picking'].sudo().search([('alvina_dispatch_id', '=', self.id)]))
         moves = receipts.move_ids
         frontier = moves
         while frontier:
@@ -151,7 +156,7 @@ class BranchDispatchLine(models.Model):
     product_id = fields.Many2one('product.product', required=True, ondelete='restrict', readonly=True)
     description = fields.Char(required=True, readonly=True, string='Producto al emitir')
     product_uom_id = fields.Many2one('uom.uom', required=True, ondelete='restrict', readonly=True)
-    quantity = fields.Float(required=True, readonly=True, digits='Product Unit', string='Despachado')
+    quantity = fields.Float(required=True, readonly=True, digits='Product Unit', string='Cantidad documentada')
     price_unit = fields.Float(required=True, readonly=True, digits='Product Price', string='Precio al emitir')
     currency_id = fields.Many2one(related='dispatch_id.currency_id')
     amount_total = fields.Monetary(readonly=True, string='Valor del despacho')
@@ -279,27 +284,33 @@ class StockPickingDispatch(models.Model):
 
     def _alvina_emit_dispatch(self):
         self.ensure_one()
-        request = self._alvina_outgoing_request()
+        receipt = self.alvina_purchase_receipt
+        request = self._alvina_check_receipt_buyer() if receipt else self._alvina_outgoing_request()
         if not request or self.state != 'done':
-            raise ValidationError(_('La guía corresponde a una salida real de Industria ya validada.'))
-        self._alvina_check_dispatch_actor(request)
+            raise ValidationError(_('Valide la operación de Inventario antes de emitir su guía interna.'))
+        if not receipt:
+            self._alvina_check_dispatch_actor(request)
         self.env.cr.execute('SELECT id FROM stock_picking WHERE id = %s FOR UPDATE', [self.id])
         existing = self.env['alvina.branch.dispatch'].sudo().search([('picking_id', '=', self.id)], limit=1)
         if existing:
             return existing.with_env(self.env)
         request = request.sudo()
         sale = request.sale_order_id
-        if not sale or sale.company_id != self.company_id:
-            raise ValidationError(_('El despacho no tiene una venta de Industria válida.'))
+        order = request.purchase_order_id if receipt else sale
+        if not order or order.company_id != self.company_id:
+            raise ValidationError(_('La operación no tiene un documento comercial válido de su compañía.'))
         quantities = {}
         for move in self.sudo().move_ids.filtered(lambda item: item.state == 'done'):
-            line = move.sale_line_id.alvina_request_line_id
+            line = (move.purchase_line_id if receipt else move.sale_line_id).alvina_request_line_id
+            if (not line or line.request_id != request or move.product_id != line.product_id
+                    or move.company_id != self.company_id):
+                raise ValidationError(_('La operación contiene productos ajenos a este requerimiento.'))
             quantities[line.id] = quantities.get(line.id, 0) + move.product_uom._compute_quantity(
                 move.quantity, line.product_uom_id, rounding_method='HALF-UP')
         bases = []
         rows = []
         for request_line in request.line_ids.filtered(lambda line: quantities.get(line.id, 0) > 0):
-            sale_line = sale.order_line.filtered(lambda line: line.alvina_request_line_id == request_line)
+            sale_line = order.order_line.filtered(lambda line: line.alvina_request_line_id == request_line)
             if len(sale_line) != 1:
                 raise ValidationError(_('Falta la línea comercial del producto despachado.'))
             shipped = quantities[request_line.id]
@@ -313,54 +324,68 @@ class StockPickingDispatch(models.Model):
                 'price_unit': sale_line.price_unit * unit_factor, 'discount': sale_line.discount,
                 'taxes': ', '.join(sale_line.tax_ids.mapped('name')),
             }
-            base = sale_line._prepare_base_line_for_taxes_computation(quantity=sale_qty)
+            if receipt:
+                base = sale_line._prepare_base_line_for_taxes_computation()
+                base['quantity'] = sale_qty
+            else:
+                base = sale_line._prepare_base_line_for_taxes_computation(quantity=sale_qty)
             base['_guide_row'] = row
             bases.append(base)
             rows.append(row)
         if not rows:
             raise ValidationError(_('No hay cantidades físicas despachadas para emitir esta guía.'))
-        Tax = sale.env['account.tax']
-        Tax._add_tax_details_in_base_lines(bases, sale.company_id)
-        Tax._round_base_lines_tax_details(bases, sale.company_id)
-        summary = Tax._get_tax_totals_summary(bases, sale.currency_id, sale.company_id)
+        Tax = order.env['account.tax']
+        Tax._add_tax_details_in_base_lines(bases, order.company_id)
+        Tax._round_base_lines_tax_details(bases, order.company_id)
+        summary = Tax._get_tax_totals_summary(bases, order.currency_id, order.company_id)
         for base in bases:
             details = base['tax_details']
             base['_guide_row'].update(
-                untaxed=sale.currency_id.round(details['total_excluded_currency']),
-                tax=sale.currency_id.round(details['total_included_currency'] - details['total_excluded_currency']),
-                total=sale.currency_id.round(details['total_included_currency']))
+                untaxed=order.currency_id.round(details['total_excluded_currency']),
+                tax=order.currency_id.round(details['total_included_currency'] - details['total_excluded_currency']),
+                total=order.currency_id.round(details['total_included_currency']))
         name = self.env['ir.sequence'].sudo().next_by_code('alvina.branch.dispatch')
         if not name:
             raise ValidationError(_('Falta configurar la secuencia de guías internas Alviña.'))
         issued = fields.Datetime.now()
-        company = sale.company_id
+        company = order.company_id
         snapshot = {
+            'source': 'receipt' if receipt else 'dispatch',
             'name': name, 'issued_date': fields.Datetime.to_string(issued) + ' UTC',
             'issued_by': self.env.user.name, 'company': company.name,
             'company_vat': company.vat or '',
             'logo': company.logo.decode() if company.logo and not company.uses_default_logo else '',
             'branch': request.branch_id.name, 'branch_code': request.branch_id.branch_code,
             'buyer_company': request.company_id.name, 'request': request.name,
-            'sale': sale.name, 'purchase': request.purchase_order_id.name,
-            'picking': self.name, 'warehouse': request.warehouse_id.name,
-            'currency': sale.currency_id.name, 'currency_id': sale.currency_id.id,
+            'sale': sale.name if sale else '', 'purchase': request.purchase_order_id.name,
+            'picking': self.name, 'warehouse': self.picking_type_id.warehouse_id.name,
+            'currency': order.currency_id.name, 'currency_id': order.currency_id.id,
             'notes': self.alvina_dispatch_note or '', 'shortage_note': self.alvina_shortage_note or '',
             'balances': [{
                 'product': line.product_id.name, 'code': line.product_id.default_code or '',
                 'uom': line.product_uom_id.name, 'requested': line.product_qty,
-                'supplied': line.qty_supplied, 'pending': line.qty_pending,
+                'supplied': line.qty_received if receipt else line.qty_supplied,
+                'pending': max(line.product_qty - line.qty_received, 0) if receipt else line.qty_pending,
             } for line in request.line_ids],
             'lines': rows, 'totals': {
-                'untaxed': sale.currency_id.round(summary['base_amount_currency']),
-                'tax': sale.currency_id.round(summary['tax_amount_currency']),
-                'total': sale.currency_id.round(summary['total_amount_currency'])},
+                'untaxed': order.currency_id.round(summary['base_amount_currency']),
+                'tax': order.currency_id.round(summary['tax_amount_currency']),
+                'total': order.currency_id.round(summary['total_amount_currency'])},
         }
         token = _ISSUING.set(True)
         try:
             guide = self.env['alvina.branch.dispatch'].sudo().with_context({}).create({
                 'name': name, 'picking_id': self.id, 'request_id': request.id,
-                'currency_id': sale.currency_id.id, 'issued_by': self.env.uid,
+                'source': snapshot['source'],
+                'currency_id': order.currency_id.id, 'issued_by': self.env.uid,
                 'issued_date': issued, 'snapshot_json': snapshot,
+                **({'receipt_state': 'conform', 'confirmed_by': self.env.uid, 'confirmed_date': issued,
+                    'receipt_confirmation_json': {'state': 'conform', 'confirmed_by': self.env.user.name,
+                        'confirmed_date': fields.Datetime.to_string(issued) + ' UTC',
+                        'note': self.alvina_dispatch_note or '',
+                        'lines': [{'request_line_id': row['request_line_id'], 'product': row['product'],
+                                   'shipped': row['shipped'], 'received': row['shipped'], 'difference': 0}
+                                  for row in rows]}} if receipt else {}),
                 'line_ids': [Command.create({
                     'request_line_id': row['request_line_id'], 'product_id': row['product_id'],
                     'description': row['product'], 'product_uom_id': row['uom_id'],

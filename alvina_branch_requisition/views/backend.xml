@@ -189,7 +189,7 @@
     <record id="action_web" model="ir.actions.act_url">
         <field name="name">Formulario Web</field>
         <field name="url">/branch/requisition/new</field>
-        <field name="target">self</field>
+        <field name="target">new</field>
     </record>
     <record id="action_consolidation" model="ir.actions.act_window">
         <field name="name">Consolidado de compras</field>

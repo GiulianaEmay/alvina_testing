@@ -169,9 +169,8 @@ class TestCommercialFlow(SupplyCompanyFixture, TransactionCase):
         # Build the old draft stage only for this guard regression. Reach
         # 'to approve' through core's real two-step confirmation, not a state
         # assignment, before simulating the newly enabled native module.
-        with patch.object(type(self.env['alvina.branch.request']), '_confirm_supply_documents', return_value=None):
-            record = self._flow()
-        purchase = record.sudo().purchase_order_id
+        record = self._flow(confirm_supply=False)
+        purchase = self._as(record.sudo().purchase_order_id, self.requester)
         self.branch_company.write({'po_double_validation': 'two_step', 'po_double_validation_amount': 0})
         purchase.button_confirm()
         self.assertEqual(purchase.state, 'to approve')
@@ -278,13 +277,14 @@ class TestCommercialFlow(SupplyCompanyFixture, TransactionCase):
             self._as(self.env['sale.order'], self.keeper).with_context(
                 default_alvina_branch_request_id=record.id).create({'partner_id': self.vendor.id})
 
-    def test_double_validation_is_completed_for_only_the_automatic_purchase(self):
+    def test_double_validation_waits_for_buyer_approval_without_changing_groups(self):
         self.branch_company.write({'po_double_validation': 'two_step', 'po_double_validation_amount': 0})
         companies = self.requester.company_ids
         groups = self.requester.group_ids
         record = self._flow()
-        self.assertEqual(record.sudo().purchase_order_id.state, 'purchase')
-        self.assertEqual(record.sudo().sale_order_id.state, 'sale')
+        self.assertEqual(record.sudo().purchase_order_id.state, 'to approve')
+        self.assertEqual(record.sudo().sale_order_id.state, 'draft')
+        self.assertFalse(record.sudo().purchase_order_id.picking_ids)
         self.assertFalse(record.sudo().purchase_order_id.invoice_ids)
         self.assertEqual(self.requester.company_ids, companies)
         self.assertEqual(self.requester.group_ids, groups)
@@ -305,16 +305,20 @@ class TestCommercialFlow(SupplyCompanyFixture, TransactionCase):
         self.assertEqual(ordinary.state, 'to approve', 'Public context cannot acquire private technical approval')
         self.assertFalse(ordinary.picking_ids)
 
-    def test_confirmation_failure_rolls_back_request_pair_and_pickings(self):
+    def test_confirmation_failure_preserves_draft_pair_without_pickings(self):
+        record = self._flow(confirm_supply=False)
+        purchase = self._as(record.sudo().purchase_order_id, self.requester)
         models = ('alvina.branch.request', 'alvina.branch.request.line',
                   'sale.order', 'purchase.order', 'stock.picking', 'stock.move')
         counts = {model: self.env[model].search_count([]) for model in models}
-        with patch.object(type(self.env['purchase.order']), 'button_confirm',
+        with patch.object(type(self.env['sale.order']), 'action_confirm',
                           side_effect=UserError('Controlled fiscal validation failure')):
-            # No savepoint supplied by this caller: the service owns the full
-            # rollback boundary, including the already-confirmed sale picking.
-            with self.assertRaisesRegex(ValidationError, 'Controlled fiscal validation failure'):
-                self._flow()
+            # A failed manual confirmation keeps the submitted RFQ and rolls
+            # back its approval and the generated Inventory operations.
+            with self.assertRaisesRegex(UserError, 'Controlled fiscal validation failure'):
+                purchase.button_confirm()
+        self.assertEqual(purchase.state, 'draft')
+        self.assertEqual(record.sudo().sale_order_id.state, 'draft')
         for model, count in counts.items():
             with self.subTest(model=model):
                 self.assertEqual(self.env[model].search_count([]), count)

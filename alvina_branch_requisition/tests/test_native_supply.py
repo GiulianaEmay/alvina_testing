@@ -97,6 +97,18 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
             self.assertTrue(self.configuration._assert_supported())
             self.configuration._check_configuration()
 
+    def test_native_submission_waits_for_buyer_and_preserves_submitted_price(self):
+        with self.native_result():
+            record = self.flow(confirm_supply=False)
+            self.assertEqual(record.purchase_order_id.state, 'draft')
+            self.assertFalse(record.sale_order_id)
+            self.assertFalse(record.purchase_order_id.picking_ids)
+            self.shared_product.list_price = 19
+            self._as(record.purchase_order_id, self.requester).button_confirm()
+        self.assertEqual(record.sale_order_id.state, 'sale')
+        self.assertEqual(record.sale_order_id.order_line.price_unit, 3.5)
+        self.assertEqual(record.purchase_order_id.order_line.price_unit, 3.5)
+
     def test_native_creates_exactly_one_pair_with_industry_prices_and_responsible(self):
         before = self.counts()
         companies = self.requester.company_ids.ids
@@ -190,10 +202,14 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
         self.assertFalse(purchase.alvina_branch_request_id)
         self.assertFalse(sale.alvina_branch_request_id)
 
-    def test_native_two_step_purchase_is_approved_only_for_the_created_pair(self):
+    def test_native_two_step_purchase_waits_for_approved_buyer(self):
         self.branch_company.write({'po_double_validation': 'two_step', 'po_double_validation_amount': 0})
         with self.native_result():
             record = self.flow()
+            self.assertEqual(record.purchase_order_id.state, 'to approve')
+            self.assertFalse(record.sale_order_id)
+            self.requester.group_ids = [Command.link(self.env.ref('purchase.group_purchase_manager').id)]
+            self._as(record.purchase_order_id, self.requester).button_approve()
         self.assertEqual(record.purchase_order_id.state, 'purchase')
         self.assertEqual(record.sale_order_id.state, 'sale')
 
@@ -211,19 +227,25 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
         with self.native_result():
             record.action_send_to_industry()
             record.action_send_to_industry()
+            self.assertEqual(record.sudo().purchase_order_id.state, 'draft')
+            self.assertFalse(record.sudo().sale_order_id)
+            self._as(record.sudo().purchase_order_id, self.requester).button_confirm()
         self.assertEqual(record.read(['name', 'request_date', 'required_date', 'amount_total'])[0], before)
         self.assertEqual(self.counts()['alvina.branch.request'], count)
         self.assertEqual(len(record.sudo().purchase_order_ids), 1)
         self.assertEqual(len(record.sudo().sale_order_ids), 1)
 
-    def test_failed_resend_restores_pending_history_without_partial_documents(self):
+    def test_failed_confirmation_keeps_pending_request_and_draft_purchase(self):
         record = self.pending_legacy()
+        with self.native_result():
+            record.action_send_to_industry()
         before = self.counts()
         with self.native_result(generate=False), self.assertRaises(ValidationError):
-            record.action_send_to_industry()
+            self._as(record.sudo().purchase_order_id, self.requester).button_confirm()
         self.assertEqual(self.counts(), before)
-        self.assertFalse(record.supply_flow)
-        self.assertFalse(record.sudo().purchase_order_id)
+        self.assertTrue(record.supply_flow)
+        self.assertEqual(record.sudo().purchase_order_id.state, 'draft')
+        self.assertFalse(record.sudo().sale_order_id)
 
     def test_another_branch_user_cannot_send_an_existing_request(self):
         record = self.pending_legacy()

@@ -63,6 +63,7 @@ class BranchRequestPurchase(models.Model):
             product = line.product_id.sudo().with_company(company)
             taxes = product.supplier_taxes_id._filter_taxes_by_company(company)
             commands.append(Command.create({
+                'alvina_request_line_id': line.id,
                 'product_id': product.id, 'name': product.display_name,
                 'product_qty': line.product_qty, 'product_uom_id': line.product_uom_id.id,
                 'price_unit': line.price_unit, 'technical_price_unit': line.price_unit,

@@ -91,7 +91,7 @@ class SupplyCompanyFixture:
     def _as(self, records, user):
         return records.with_user(user).with_context(allowed_company_ids=user.company_ids.ids)
 
-    def _request(self, user=None, branch=None, product=None, quantity=5, **extra):
+    def _request(self, user=None, branch=None, product=None, quantity=5, confirm_supply=True, **extra):
         user = user or self.requester
         product = self.product if product is None else product
         values = {
@@ -102,7 +102,13 @@ class SupplyCompanyFixture:
             })],
         }
         values.update(extra)
-        return self._as(self.env['alvina.branch.request'], user).create(values)
+        # Most downstream fixtures exercise an already confirmed supply. New
+        # workflow tests explicitly keep the RFQ stage with confirm_supply=False.
+        with self.cr.savepoint():
+            record = self._as(self.env['alvina.branch.request'], user).create(values)
+            if confirm_supply and record.supply_flow:
+                self._as(record.sudo().purchase_order_id, user).button_confirm()
+            return record
 
 
 @tagged('post_install', '-at_install')

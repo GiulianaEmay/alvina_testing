@@ -2,6 +2,7 @@
 from contextvars import ContextVar
 
 NATIVE_SUPPLY = ContextVar('alvina_native_supply', default=None)
+PURCHASE_CONFIRMATION = ContextVar('alvina_purchase_confirmation', default=frozenset())
 
 
 def native_sale_expected():

@@ -9,7 +9,7 @@ from datetime import datetime, time
 
 from odoo import api, Command, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
-from .supply_context import NATIVE_SUPPLY
+from .supply_context import NATIVE_SUPPLY, PURCHASE_CONFIRMATION
 
 
 # A client-supplied context value cannot confer technical approval. The scope is
@@ -22,6 +22,7 @@ class BranchRequest(models.Model):
 
     supply_flow = fields.Boolean(default=False, readonly=True, copy=False, string='Flujo Industria')
     supply_config_id = fields.Many2one('alvina.supply.configuration', readonly=True, ondelete='restrict')
+    native_sale_snapshot = fields.Json(readonly=True, copy=False)
     operation_mode = fields.Selection([
         ('intercompany', 'Compañías distintas'), ('internal', 'Misma compañía')], readonly=True)
     sale_order_ids = fields.One2many('sale.order', 'alvina_branch_request_id', readonly=True)
@@ -54,7 +55,8 @@ class BranchRequest(models.Model):
             self.env.cr.execute('SELECT id FROM alvina_branch_request WHERE id = %s FOR UPDATE', [self.id])
             self.invalidate_recordset(['supply_flow', 'state', 'sale_order_id', 'purchase_order_id'])
             history = self.sudo()
-            if history.supply_flow and history.sale_order_id and history.purchase_order_id:
+            if (history.supply_flow and history.purchase_order_id
+                    and (history.sale_order_id or history.native_sale_snapshot)):
                 return {'type': 'ir.actions.client', 'tag': 'reload'}
             if (self.state != 'pending' or history.sale_order_id or history.purchase_order_id
                     or any(line.qty_supplied or line.qty_received or line.qty_cancelled for line in history.line_ids)):
@@ -84,6 +86,10 @@ class BranchRequest(models.Model):
 
     def _check_supply_actor(self):
         self.ensure_one()
+        if (self.manual_purchase_flow and self.env.su
+                and self.purchase_order_id.id in PURCHASE_CONFIRMATION.get()):
+            self.supply_config_id.sudo()._validate_for_branch(self.branch_id)
+            return
         self.check_access('read')
         if (not self.supply_flow or self.user_id != self.env.user
                 or self.env.uid not in self.branch_id.sudo().user_ids.ids
@@ -102,6 +108,8 @@ class BranchRequest(models.Model):
                     'El abastecimiento tiene una venta sin su compra vinculada. '
                     'Revise su integridad antes de continuar; no se duplicarán documentos.'))
             return existing.sale_order_id
+        if existing.purchase_order_id and self.manual_purchase_flow and self.native_sale_snapshot:
+            return existing.purchase_order_id
         if existing.purchase_order_id:
             raise ValidationError(_(
                 'El abastecimiento tiene una compra sin su venta vinculada. '
@@ -186,12 +194,27 @@ class BranchRequest(models.Model):
             'state': 'draft', 'user_id': False, 'origin': self.name,
             'date_order': self.request_date, 'order_line': commands,
         })
+        if self.manual_purchase_flow:
+            if native:
+                # Freeze the priced virtual sale at submission. Native Odoo
+                # creates its actual counterpart only when the buyer confirms.
+                snapshot = dict(sale_values, date_order=fields.Datetime.to_string(self.request_date),
+                    commitment_date=fields.Datetime.to_string(sale_values['commitment_date']),
+                    order_line=[Command.create({
+                        'alvina_request_line_id': line.alvina_request_line_id.id,
+                        'product_id': line.product_id.id, 'product_uom_id': line.product_uom_id.id,
+                        'product_uom_qty': line.product_uom_qty, 'name': line.name,
+                        'price_unit': line.price_unit, 'discount': line.discount,
+                        'tax_ids': [Command.set(line.tax_ids.ids)],
+                    }) for line in sale.order_line])
+                self._set_native_sale_snapshot(snapshot)
+            return purchase if native else sale
         if native:
             return self._confirm_native_supply(purchase, sale, sale_values)
         self._confirm_supply_documents(sale, purchase)
         return sale
 
-    def _confirm_native_supply(self, purchase, priced_sale, sale_values):
+    def _confirm_native_supply(self, purchase, priced_sale, sale_values, confirm_purchase=None):
         self._check_supply_actor()
         header = {key: value for key, value in sale_values.items()
                   if key not in ('order_line', 'state', 'date_order', 'origin')}
@@ -210,7 +233,12 @@ class BranchRequest(models.Model):
         }
         token = NATIVE_SUPPLY.set(scope)
         try:
-            self._approve_supply_purchase(purchase)
+            if confirm_purchase:
+                confirm_purchase()
+                if purchase.state == 'to approve':
+                    return False
+            else:
+                self._approve_supply_purchase(purchase)
             if not scope['sale_id']:
                 raise ValidationError(_(
                     'Odoo no generó la venta de Industria al confirmar la compra. '
@@ -361,7 +389,10 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         for order in self.filtered('alvina_branch_request_id'):
-            configuration = order.sudo().alvina_branch_request_id.supply_config_id
+            request = order.sudo().alvina_branch_request_id
+            if request.manual_purchase_flow and request.purchase_order_id.state != 'purchase':
+                raise ValidationError(_('Confirme primero la orden de compra de la sucursal.'))
+            configuration = request.supply_config_id
             configuration._assert_supported()
             scope = NATIVE_SUPPLY.get()
             if configuration._native_intercompany_installed() and (

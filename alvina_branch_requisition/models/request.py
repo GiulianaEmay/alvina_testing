@@ -30,6 +30,8 @@ class BranchRequest(models.Model):
     price_snapshot_set = fields.Boolean(compute='_compute_amount_total', store=True,
                                         string='Precio registrado al solicitar')
     submission_key = fields.Char(required=True, readonly=True, copy=False)
+    manual_purchase_flow = fields.Boolean(readonly=True, copy=False,
+        help='Las solicitudes nuevas esperan la confirmación de Compras y se reciben desde su OC.')
     _submission_unique = models.Constraint('UNIQUE(submission_key)', 'Este formulario ya fue enviado.')
 
     @api.depends('line_ids.price_subtotal', 'line_ids.price_snapshot_set')
@@ -40,7 +42,7 @@ class BranchRequest(models.Model):
 
     def _submission_values(self, branch):
         """Server-only extension point, after identity and assignment checks."""
-        return {}
+        return {'manual_purchase_flow': True}
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -99,6 +101,11 @@ class BranchRequest(models.Model):
             'supply_flow': True, 'supply_config_id': configuration.id,
             'operation_mode': 'intercompany',
         })
+
+    def _set_native_sale_snapshot(self, snapshot):
+        """Private service write; submitted fields remain immutable over RPC."""
+        self.ensure_one()
+        return super(BranchRequest, self.sudo()).write({'native_sale_snapshot': snapshot})
 
     def unlink(self):
         raise AccessError(_('Archive la sucursal o cancele el requerimiento; no elimine su historial.'))

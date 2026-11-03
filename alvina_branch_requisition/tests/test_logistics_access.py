@@ -41,7 +41,7 @@ class TestLogisticsAccess(SupplyCompanyFixture, TransactionCase):
             })
 
         def request(branch, user, quantity):
-            return cls.env['alvina.branch.request'].with_user(user).with_context(
+            record = cls.env['alvina.branch.request'].with_user(user).with_context(
                 allowed_company_ids=user.company_ids.ids).create({
                     'branch_id': branch.id, 'required_date': cls.required_date,
                     'submission_key': str(uuid4()),
@@ -50,6 +50,10 @@ class TestLogisticsAccess(SupplyCompanyFixture, TransactionCase):
                         'product_qty': quantity,
                     })],
                 })
+            if record.supply_flow:
+                record.sudo().purchase_order_id.with_user(user).with_context(
+                    allowed_company_ids=user.company_ids.ids).button_confirm()
+            return record
 
         # A historical link alone is insufficient: logistics requires the
         # explicitly enabled, validated supply flow, not any linked sale.

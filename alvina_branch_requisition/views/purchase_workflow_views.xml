@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_manual_workflow" model="ir.ui.view">
+        <field name="name">purchase.order.alvina.manual.workflow</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <field name="alvina_manual_purchase" invisible="True"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_receipt_manual_workflow" model="ir.ui.view">
+        <field name="name">stock.picking.alvina.manual.workflow</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="alvina_purchase_receipt" invisible="True"/>
+                <button name="action_alvina_validate_receipt" type="object" string="Validar"
+                        class="oe_highlight" groups="purchase.group_purchase_user"
+                        invisible="not alvina_purchase_receipt or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_print_receipt" type="object" string="Imprimir"
+                        groups="purchase.group_purchase_user" invisible="not alvina_purchase_receipt or state == 'cancel'"/>
+                <button name="action_alvina_autofill" type="object" string="Autocompletar cantidades"
+                        groups="purchase.group_purchase_user"
+                        invisible="not alvina_purchase_receipt or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_receipt_guide" type="object" string="Generar guía de remisión"
+                        groups="purchase.group_purchase_user" invisible="not alvina_purchase_receipt or state != 'done'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -26,7 +26,9 @@
                         <group><field name="branch_id" options="{'no_open': True}"/><field name="buyer_company_id" options="{'no_open': True}"/><field name="request_id" options="{'no_open': True}"/></group>
                         <group><field name="company_id" options="{'no_open': True}"/><field name="issued_date"/><field name="issued_by" options="{'no_open': True}"/></group>
                     </group>
-                    <p>Esta guía corresponde a un despacho físico validado. La recepción se confirma con las cantidades reales; los faltantes por despachar y las diferencias de recepción son saldos distintos.</p>
+                    <field name="source" invisible="True"/>
+                    <p invisible="source != 'dispatch'">Esta guía corresponde a un despacho físico validado. La recepción se confirma con las cantidades reales; los faltantes por despachar y las diferencias de recepción son saldos distintos.</p>
+                    <p invisible="source != 'receipt'">Esta guía documenta las cantidades realmente recibidas en una recepción validada de la orden de compra. No valida el despacho de Industria ni genera una factura.</p>
                     <field name="line_ids"><list create="0" edit="0" delete="0">
                         <field name="description"/><field name="product_uom_id" options="{'no_open': True}"/>
                         <field name="quantity"/><field name="qty_received"/><field name="qty_difference"/>

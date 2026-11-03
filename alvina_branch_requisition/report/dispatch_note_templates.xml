@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_dispatch_note_report" model="ir.actions.report">
-        <field name="name">Guía interna valorizada por despacho</field>
+        <field name="name">Guía interna valorizada</field>
         <field name="model">alvina.branch.dispatch</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">alvina_branch_requisition.dispatch_note</field>
@@ -27,34 +27,34 @@
                     thead {display: table-header-group;} tr {page-break-inside:avoid;}
                 </style>
                 <img t-if="d['logo']" t-att-src="'data:image/png;base64,' + d['logo']" style="max-height:65px; max-width:150px;"/>
-                <h1>GUÍA INTERNA DE DESPACHO VALORIZADA</h1>
+                <h1 t-out="'GUÍA INTERNA DE RECEPCIÓN VALORIZADA' if d.get('source') == 'receipt' else 'GUÍA INTERNA DE DESPACHO VALORIZADA'"/>
                 <strong t-out="d['company']"/> — <span t-out="d['company_vat']"/>
                 <table><tbody>
-                    <tr><td><strong>Guía:</strong> <span t-out="d['name']"/></td><td><strong>Despacho:</strong> <span t-out="d['picking']"/></td></tr>
+                    <tr><td><strong>Guía:</strong> <span t-out="d['name']"/></td><td><strong t-out="'Recepción:' if d.get('source') == 'receipt' else 'Despacho:'"/> <span t-out="d['picking']"/></td></tr>
                     <tr><td><strong>Sucursal:</strong> <span t-out="d['branch']"/> (<span t-out="d['branch_code']"/>)</td><td><strong>Compradora:</strong> <span t-out="d['buyer_company']"/></td></tr>
                     <tr><td><strong>Fecha de emisión:</strong> <span t-out="d['issued_date']"/></td><td><strong>Responsable:</strong> <span t-out="d['issued_by']"/></td></tr>
                     <tr><td><strong>OC / OV:</strong> <span t-out="d['purchase']"/> / <span t-out="d['sale']"/></td><td><strong>Requerimiento:</strong> <span t-out="d['request']"/></td></tr>
-                    <tr><td><strong>Almacén de Industria:</strong> <span t-out="d['warehouse']"/></td><td><strong>Moneda:</strong> <span t-out="d['currency']"/></td></tr>
+                    <tr><td><strong>Almacén:</strong> <span t-out="d['warehouse']"/></td><td><strong>Moneda:</strong> <span t-out="d['currency']"/></td></tr>
                 </tbody></table>
-                <h2>Productos de este despacho</h2>
-                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num">Despachado</th><th class="num">Precio</th><th class="num">Desc. %</th><th>Impuestos</th><th class="num">Valor</th></tr></thead><tbody>
+                <h2 t-out="'Productos de esta recepción' if d.get('source') == 'receipt' else 'Productos de este despacho'"/>
+                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num" t-out="'Recibido' if d.get('source') == 'receipt' else 'Despachado'"/><th class="num">Precio</th><th class="num">Desc. %</th><th>Impuestos</th><th class="num">Valor</th></tr></thead><tbody>
                     <tr t-foreach="d['lines']" t-as="line"><td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td t-out="line['uom']"/><td class="num" t-out="line['requested']"/><td class="num" t-out="line['shipped']"/><td class="num" t-out="line['price_display']"/><td class="num" t-out="line['discount']"/><td t-out="line['taxes'] or 'Sin impuestos'"/><td class="num" t-out="line['total_display']"/></tr>
                 </tbody></table>
-                <table><tbody><tr><td>Base sin impuestos</td><td class="num" t-out="d['totals_display']['untaxed']"/></tr><tr><td>Impuestos configurados</td><td class="num" t-out="d['totals_display']['tax']"/></tr><tr><td><strong>Valor de este despacho</strong></td><td class="num"><strong t-out="d['totals_display']['total']"/></td></tr></tbody></table>
+                <table><tbody><tr><td>Base sin impuestos</td><td class="num" t-out="d['totals_display']['untaxed']"/></tr><tr><td>Impuestos configurados</td><td class="num" t-out="d['totals_display']['tax']"/></tr><tr><td><strong t-out="'Valor de esta recepción' if d.get('source') == 'receipt' else 'Valor de este despacho'"/></td><td class="num"><strong t-out="d['totals_display']['total']"/></td></tr></tbody></table>
                 <p class="note" t-if="d['notes']" t-out="d['notes']"/>
                 <p class="note" t-if="d['shortage_note']"><strong>Motivo de faltantes:</strong> <span t-out="d['shortage_note']"/></p>
                 <h2>Saldo del requerimiento al emitir esta guía</h2>
-                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num">Despachado neto acumulado</th><th class="num">Pendiente por despachar</th></tr></thead><tbody>
+                <table><thead><tr><th>Producto</th><th>Unidad</th><th class="num">Solicitado</th><th class="num" t-out="'Recibido neto acumulado' if d.get('source') == 'receipt' else 'Despachado neto acumulado'"/><th class="num" t-out="'Pendiente por recibir' if d.get('source') == 'receipt' else 'Pendiente por despachar'"/></tr></thead><tbody>
                     <tr t-foreach="d.get('balances', [])" t-as="line"><td><span t-out="line['code']"/> <span t-out="line['product']"/></td><td t-out="line['uom']"/><td class="num" t-out="line['requested']"/><td class="num" t-out="line['supplied']"/><td class="num" t-out="line['pending']"/></tr>
                 </tbody></table>
-                <h2>Recepción de la sucursal</h2>
+                <h2 t-if="d.get('source') != 'receipt'">Recepción de la sucursal</h2>
                 <p t-if="r['state'] == 'pending'">Pendiente de confirmación. Lo despachado no se supone recibido.</p>
                 <t t-else="">
                     <p><strong t-out="'Recepción conforme' if r['state'] == 'conform' else 'Recepción con diferencias'"/> — <span t-out="r['confirmed_date']"/> — <span t-out="r['confirmed_by']"/></p>
-                    <table><thead><tr><th>Producto</th><th class="num">Despachado</th><th class="num">Realmente recibido</th><th class="num">Diferencia</th></tr></thead><tbody><tr t-foreach="r['lines']" t-as="line"><td t-out="line['product']"/><td class="num" t-out="line['shipped']"/><td class="num" t-out="line['received']"/><td class="num" t-out="line['difference']"/></tr></tbody></table>
+                    <table t-if="d.get('source') != 'receipt'"><thead><tr><th>Producto</th><th class="num" t-out="'Recibido' if d.get('source') == 'receipt' else 'Despachado'"/><th class="num">Realmente recibido</th><th class="num">Diferencia</th></tr></thead><tbody><tr t-foreach="r['lines']" t-as="line"><td t-out="line['product']"/><td class="num" t-out="line['shipped']"/><td class="num" t-out="line['received']"/><td class="num" t-out="line['difference']"/></tr></tbody></table>
                     <p class="note" t-out="r['note']"/>
                 </t>
-                <p class="muted">Documento interno, sin envío a SUNAT. No es una factura. Los precios y cantidades de despacho se conservaron al emitir esta guía. Una diferencia de recepción no vuelve a descontar ni modifica el saldo pendiente de despacho.</p>
+                <p class="muted">Documento interno, sin envío a SUNAT. No es una factura. Los precios y cantidades documentadas se conservaron al emitir esta guía. La guía no modifica existencias ni confirma operaciones pendientes.</p>
             </div>
         </t>
         </t>

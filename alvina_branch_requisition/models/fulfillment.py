@@ -160,7 +160,8 @@ class RequestLineFulfillment(models.Model):
         return int(destination_out) - int(source_out)
 
     @api.depends(
-        'request_id.supply_flow', 'request_id.operation_mode', 'product_uom_id', 'legacy_qty_supplied',
+        'request_id.supply_flow', 'request_id.manual_purchase_flow',
+        'request_id.operation_mode', 'product_uom_id', 'legacy_qty_supplied',
         'sale_line_ids.move_ids.state', 'sale_line_ids.move_ids.quantity',
         'sale_line_ids.move_ids.product_uom', 'sale_line_ids.move_ids.location_id',
         'sale_line_ids.move_ids.location_dest_id',
@@ -193,6 +194,7 @@ class RequestLineFulfillment(models.Model):
                         supplied += direction * actual
                     elif direction > 0 and move.state not in ('draft', 'cancel'):
                         prepared += actual
+            if line.request_id.supply_flow or line.request_id.manual_purchase_flow:
                 receipt_moves = line.purchase_line_ids.move_ids
                 frontier = receipt_moves
                 while frontier:
