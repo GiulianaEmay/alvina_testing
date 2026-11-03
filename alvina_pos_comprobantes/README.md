@@ -11,12 +11,15 @@ Los clientes nuevos quedan como identidades fiscales internas archivadas.
 Consulte el README del repositorio para instalación, actualización y pruebas.
 Dependencias: point_of_sale, l10n_pe, account_edi, requests.
 
-## Compatibilidad de arranque — 19.0.3.0.2
+## Compatibilidad de arranque — 19.0.3.0.3
 
-El formato electrónico opcional se guarda por compañía en los parámetros de
-Odoo, sin exigir la columna `res_company.alvina_edi_format_id`. Esto permite
-reiniciar tras desplegar el código aunque esa columna todavía no exista y
-acceder a Apps para realizar las actualizaciones pendientes. Si la columna ya
-existe, su selección anterior se conserva como valor de respaldo hasta que el
-administrador cambie o borre la selección en la configuración de compañía.
-El arreglo no crea columnas ni modifica plantillas al arrancar.
+El formato electrónico y todas las opciones JSON.PE se guardan por compañía en
+los parámetros de Odoo. La lectura de compañías no exige ninguna de las 14
+columnas de configuración del módulo. Esto permite reiniciar tras desplegar el
+código aunque falten esas columnas y acceder a Apps para realizar las
+actualizaciones pendientes. Los valores de columnas antiguas que sí existan se
+conservan como respaldo hasta que el administrador cambie o borre la opción.
+Los tokens siguen restringidos a administradores y no se exportan al POS.
+El arreglo no crea columnas ni modifica plantillas al arrancar. Se comprobó el
+arranque HTTP de la portada, `/odoo` y `/web/login` con las 14 columnas ausentes,
+sin ejecutar una actualización del módulo antes de arrancar.

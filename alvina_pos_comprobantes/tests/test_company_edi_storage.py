@@ -2,6 +2,7 @@
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from psycopg2 import sql
 
 
 @tagged('post_install', '-at_install', 'alvina')
@@ -64,6 +65,10 @@ class TestCompanyEdiStorage(TransactionCase):
         })
         with self.assertRaises(AccessError):
             self.env.company.with_user(user).write({'alvina_edi_format_id': self.first_format.id})
+        with self.assertRaises(AccessError):
+            self.env.company.with_user(user).write({'alvina_jsonpe_profile': 'custom'})
+        with self.assertRaises(AccessError):
+            self.env.company.with_user(user).read(['alvina_jsonpe_token'])
 
     def test_form_onchange_preserves_selection_without_writing_virtual_changes(self):
         self.env.company.alvina_edi_format_id = self.first_format
@@ -72,3 +77,88 @@ class TestCompanyEdiStorage(TransactionCase):
         draft.alvina_edi_format_id = self.second_format
         self.env.company.invalidate_recordset(['alvina_edi_format_id'])
         self.assertEqual(self.env.company.alvina_edi_format_id, self.first_format)
+
+    def test_prefetch_and_settings_work_with_all_pos_company_columns_absent(self):
+        names = ['alvina_emission_mode', 'alvina_edi_format_id', 'alvina_jsonpe_enabled',
+                 'alvina_jsonpe_profile', 'alvina_jsonpe_dni_url', 'alvina_jsonpe_ruc_url',
+                 'alvina_jsonpe_method', 'alvina_jsonpe_parameter', 'alvina_jsonpe_name_path',
+                 'alvina_jsonpe_number_path', 'alvina_jsonpe_street_path', 'alvina_jsonpe_auth_header',
+                 'alvina_jsonpe_auth_prefix', 'alvina_jsonpe_token']
+        self.env.flush_all()
+        for name in names:
+            self.cr.execute(sql.SQL('ALTER TABLE res_company DROP COLUMN IF EXISTS {}').format(sql.Identifier(name)))
+        self.env.invalidate_all()
+        company = self.env.company
+        self.assertTrue(company.name)
+        self.assertTrue(company.currency_id)
+        self.assertFalse(company.alvina_jsonpe_enabled)
+        self.assertEqual(company.alvina_jsonpe_profile, 'official')
+        self.assertEqual(company.alvina_jsonpe_method, 'POST')
+        self.assertEqual(company.alvina_jsonpe_parameter, 'numero')
+        self.assertEqual(company.alvina_jsonpe_auth_header, 'Authorization')
+        self.assertFalse(company.alvina_jsonpe_token)
+        company.write({'alvina_jsonpe_enabled': True, 'alvina_jsonpe_profile': 'custom',
+                       'alvina_jsonpe_token': 'unit-test-placeholder', 'alvina_jsonpe_method': 'GET'})
+        company.invalidate_recordset(names)
+        self.assertTrue(company.alvina_jsonpe_enabled)
+        self.assertEqual(company.alvina_jsonpe_profile, 'custom')
+        self.assertEqual(company.alvina_jsonpe_method, 'GET')
+        self.assertEqual(company.alvina_jsonpe_token, 'unit-test-placeholder')
+        self.assertTrue(all(not company._fields[name].store for name in names))
+
+    def test_jsonpe_legacy_values_are_preserved_and_explicit_disable_wins(self):
+        self.cr.execute('ALTER TABLE res_company ADD COLUMN IF NOT EXISTS alvina_jsonpe_enabled boolean')
+        self.cr.execute('ALTER TABLE res_company ADD COLUMN IF NOT EXISTS alvina_jsonpe_profile varchar')
+        self.cr.execute('ALTER TABLE res_company ADD COLUMN IF NOT EXISTS alvina_jsonpe_token varchar')
+        self.cr.execute('UPDATE res_company SET alvina_jsonpe_enabled=true, alvina_jsonpe_profile=%s, '
+                        'alvina_jsonpe_token=%s WHERE id=%s',
+                        ['custom', 'legacy-unit-test-placeholder', self.env.company.id])
+        names = ['alvina_jsonpe_enabled', 'alvina_jsonpe_profile', 'alvina_jsonpe_token']
+        for name in names:
+            self.env['ir.config_parameter'].sudo().set_param(self.env.company._alvina_setting_key(name), False)
+        self.env.company.invalidate_recordset(names)
+        self.assertTrue(self.env.company.alvina_jsonpe_enabled)
+        self.assertEqual(self.env.company.alvina_jsonpe_profile, 'custom')
+        self.assertEqual(self.env.company.alvina_jsonpe_token, 'legacy-unit-test-placeholder')
+        self.env.company.write({'alvina_jsonpe_enabled': False, 'alvina_jsonpe_token': False})
+        self.env.company.invalidate_recordset(names)
+        self.assertFalse(self.env.company.alvina_jsonpe_enabled)
+        self.assertFalse(self.env.company.alvina_jsonpe_token)
+        self.assertEqual(self.env.company.alvina_jsonpe_profile, 'custom')
+
+    def test_editing_one_jsonpe_setting_keeps_other_values_and_company_isolation(self):
+        other = self.env['res.company'].create({'name': 'Isolated JSONPE company'})
+        self.env.company.write({'alvina_jsonpe_profile': 'custom',
+            'alvina_jsonpe_token': 'first-unit-test-placeholder', 'alvina_jsonpe_method': 'GET'})
+        other.write({'alvina_jsonpe_profile': 'official', 'alvina_jsonpe_token': 'second-unit-test-placeholder'})
+        self.env.company.alvina_jsonpe_enabled = True
+        names = ['alvina_jsonpe_enabled', 'alvina_jsonpe_profile', 'alvina_jsonpe_token', 'alvina_jsonpe_method']
+        (self.env.company | other).invalidate_recordset(names)
+        self.assertEqual(self.env.company.alvina_jsonpe_profile, 'custom')
+        self.assertEqual(self.env.company.alvina_jsonpe_method, 'GET')
+        self.assertEqual(self.env.company.alvina_jsonpe_token, 'first-unit-test-placeholder')
+        self.assertFalse(other.alvina_jsonpe_enabled)
+        self.assertEqual(other.alvina_jsonpe_profile, 'official')
+        self.assertEqual(other.alvina_jsonpe_token, 'second-unit-test-placeholder')
+
+    def test_jsonpe_settings_survive_onchange_without_persisting_draft_changes(self):
+        self.env.company.alvina_jsonpe_profile = 'custom'
+        draft = self.env['res.company'].new({'name': 'Unsaved JSONPE settings'}, origin=self.env.company)
+        self.assertEqual(draft.alvina_jsonpe_profile, 'custom')
+        draft.alvina_jsonpe_profile = 'official'
+        self.env.company.invalidate_recordset(['alvina_jsonpe_profile'])
+        self.assertEqual(self.env.company.alvina_jsonpe_profile, 'custom')
+
+    def test_cleared_legacy_char_settings_are_not_replaced_with_defaults(self):
+        self.cr.execute('ALTER TABLE res_company ADD COLUMN IF NOT EXISTS alvina_jsonpe_auth_prefix varchar')
+        self.cr.execute('UPDATE res_company SET alvina_jsonpe_auth_prefix=NULL WHERE id=%s', [self.env.company.id])
+        self.env['ir.config_parameter'].sudo().set_param(
+            self.env.company._alvina_setting_key('alvina_jsonpe_auth_prefix'), False)
+        self.env.company.invalidate_recordset(['alvina_jsonpe_auth_prefix'])
+        self.assertFalse(self.env.company.alvina_jsonpe_auth_prefix)
+
+    def test_malformed_json_selection_cannot_break_company_reads(self):
+        self.env['ir.config_parameter'].sudo().set_param(
+            self.env.company._alvina_setting_key('alvina_jsonpe_profile'), '{}')
+        self.env.company.invalidate_recordset(['alvina_jsonpe_profile'])
+        self.assertEqual(self.env.company.alvina_jsonpe_profile, 'official')

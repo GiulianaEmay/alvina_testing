@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlsplit
 
 import requests
+from psycopg2 import sql
 
 from odoo import fields, models, _
 from odoo.exceptions import UserError
@@ -12,12 +13,30 @@ from .jsonpe import parse_response, request_spec
 from .identity import validate_identity
 
 
+_COMPANY_SETTING_DEFAULTS = {
+    "alvina_emission_mode": "immediate",
+    "alvina_jsonpe_enabled": False,
+    "alvina_jsonpe_profile": "official",
+    "alvina_jsonpe_dni_url": False,
+    "alvina_jsonpe_ruc_url": False,
+    "alvina_jsonpe_method": "POST",
+    "alvina_jsonpe_parameter": "numero",
+    "alvina_jsonpe_name_path": False,
+    "alvina_jsonpe_number_path": False,
+    "alvina_jsonpe_street_path": False,
+    "alvina_jsonpe_auth_header": "Authorization",
+    "alvina_jsonpe_auth_prefix": "Bearer",
+    "alvina_jsonpe_token": False,
+}
+
+
 class ResCompany(models.Model):
     _inherit = "res.company"
 
     alvina_emission_mode = fields.Selection(
         [("pending", "Valor anterior (sin uso en el POS)"), ("immediate", "Emisión inmediata")],
         default="immediate", required=True, groups="base.group_system", string="Modo anterior",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_emission_mode",
     )
     # Retained for database compatibility. Interactive issuance always runs now.
     alvina_edi_format_id = fields.Many2one(
@@ -26,24 +45,131 @@ class ResCompany(models.Model):
         help="Opcional si se detecta el formato de l10n_pe_edi en el diario del POS. "
              "Para otro proveedor, seleccione su formato electrónico peruano ya configurado.",
     )
-    alvina_jsonpe_enabled = fields.Boolean(string="Activar consultas JSON.PE", groups="base.group_system")
+    alvina_jsonpe_enabled = fields.Boolean(string="Activar consultas JSON.PE", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_enabled")
     alvina_jsonpe_profile = fields.Selection(
         [("official", "JSON.PE — DNI y RUC"), ("custom", "Personalizado (avanzado)")],
         default="official", required=True, groups="base.group_system", string="Perfil de consulta",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_profile",
     )
-    alvina_jsonpe_dni_url = fields.Char(string="URL de consulta DNI", groups="base.group_system")
-    alvina_jsonpe_ruc_url = fields.Char(string="URL de consulta RUC", groups="base.group_system")
+    alvina_jsonpe_dni_url = fields.Char(string="URL de consulta DNI", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_dni_url")
+    alvina_jsonpe_ruc_url = fields.Char(string="URL de consulta RUC", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_ruc_url")
     alvina_jsonpe_method = fields.Selection(
         [("GET", "GET (query string)"), ("POST", "POST (JSON)")],
         default="POST", required=True, groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_method",
     )
-    alvina_jsonpe_parameter = fields.Char(default="numero", groups="base.group_system")
-    alvina_jsonpe_name_path = fields.Char(groups="base.group_system")
-    alvina_jsonpe_number_path = fields.Char(groups="base.group_system")
-    alvina_jsonpe_street_path = fields.Char(groups="base.group_system")
-    alvina_jsonpe_auth_header = fields.Char(default="Authorization", groups="base.group_system")
-    alvina_jsonpe_auth_prefix = fields.Char(default="Bearer", groups="base.group_system")
-    alvina_jsonpe_token = fields.Char(string="Token de JSON.PE", copy=False, groups="base.group_system")
+    alvina_jsonpe_parameter = fields.Char(default="numero", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_parameter")
+    alvina_jsonpe_name_path = fields.Char(groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_name_path")
+    alvina_jsonpe_number_path = fields.Char(groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_number_path")
+    alvina_jsonpe_street_path = fields.Char(groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_street_path")
+    alvina_jsonpe_auth_header = fields.Char(default="Authorization", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_auth_header")
+    alvina_jsonpe_auth_prefix = fields.Char(default="Bearer", groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_auth_prefix")
+    alvina_jsonpe_token = fields.Char(string="Token de JSON.PE", copy=False, groups="base.group_system",
+        compute="_compute_alvina_company_settings", inverse="_inverse_alvina_jsonpe_token")
+
+    def _alvina_setting_key(self, name):
+        self.ensure_one()
+        return "alvina_pos_comprobantes.company.%s.%s" % (self._origin.id, name)
+
+    def _compute_alvina_company_settings(self):
+        """Keep all POS settings readable before an Apps/schema upgrade.
+
+        Read only legacy columns that really exist. Missing settings use safe
+        defaults and new edits use Odoo parameters, scoped to each company.
+        Tokens remain server-side and keep the existing administrator ACL.
+        """
+        parameters = self.env["ir.config_parameter"].sudo()
+        company_ids = list({c._origin.id for c in self if isinstance(c._origin.id, int)})
+        legacy = {}
+        if company_ids:
+            self.env.cr.execute("""
+                SELECT attname FROM pg_attribute
+                WHERE attrelid = 'res_company'::regclass
+                  AND attname = ANY(%s) AND NOT attisdropped
+            """, [list(_COMPANY_SETTING_DEFAULTS)])
+            columns = sorted(row[0] for row in self.env.cr.fetchall())
+            if columns:
+                self.env.cr.execute(sql.SQL("SELECT id, {} FROM res_company WHERE id = ANY(%s)").format(
+                    sql.SQL(", ").join(map(sql.Identifier, columns))), [company_ids])
+                legacy = {row[0]: dict(zip(columns, row[1:])) for row in self.env.cr.fetchall()}
+        for company in self:
+            origin = company._origin.id
+            for name, default in _COMPANY_SETTING_DEFAULTS.items():
+                raw = parameters.get_param(company._alvina_setting_key(name)) if isinstance(origin, int) else False
+                value = legacy.get(origin, {}).get(name, default)
+                if raw:
+                    try:
+                        value = json.loads(raw)
+                    except (ValueError, TypeError):
+                        value = default
+                field = self._fields[name]
+                if field.type == "boolean":
+                    value = value if isinstance(value, bool) else default
+                elif field.type == "selection":
+                    value = value if isinstance(value, str) and value in dict(field.selection) else default
+                elif value is None:
+                    value = False
+                elif value is not False and not isinstance(value, str):
+                    value = default
+                company[name] = value
+
+    def _alvina_inverse_company_setting(self, name):
+        if name not in _COMPANY_SETTING_DEFAULTS:
+            raise ValueError("Unknown POS company setting")
+        for company in self:
+            if isinstance(company.id, int):
+                self.env["ir.config_parameter"].sudo().set_param(
+                    company._alvina_setting_key(name), json.dumps(company[name]))
+
+    # Separate inverse methods prevent Odoo from protecting unrelated setting
+    # caches while saving just one setting (e.g. enable/disable the provider).
+    def _inverse_alvina_emission_mode(self):
+        self._alvina_inverse_company_setting("alvina_emission_mode")
+
+    def _inverse_alvina_jsonpe_enabled(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_enabled")
+
+    def _inverse_alvina_jsonpe_profile(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_profile")
+
+    def _inverse_alvina_jsonpe_dni_url(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_dni_url")
+
+    def _inverse_alvina_jsonpe_ruc_url(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_ruc_url")
+
+    def _inverse_alvina_jsonpe_method(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_method")
+
+    def _inverse_alvina_jsonpe_parameter(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_parameter")
+
+    def _inverse_alvina_jsonpe_name_path(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_name_path")
+
+    def _inverse_alvina_jsonpe_number_path(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_number_path")
+
+    def _inverse_alvina_jsonpe_street_path(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_street_path")
+
+    def _inverse_alvina_jsonpe_auth_header(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_auth_header")
+
+    def _inverse_alvina_jsonpe_auth_prefix(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_auth_prefix")
+
+    def _inverse_alvina_jsonpe_token(self):
+        self._alvina_inverse_company_setting("alvina_jsonpe_token")
 
     def _alvina_edi_parameter_key(self):
         self.ensure_one()
