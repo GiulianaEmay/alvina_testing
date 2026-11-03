@@ -1,6 +1,6 @@
 {
     'name': 'Alviña - Requerimientos de sucursales',
-    'version': '19.0.3.2.0',
+    'version': '19.0.3.3.0',
     'author': 'Grupo Alviña',
     'license': 'LGPL-3',
     'depends': ['purchase', 'stock', 'purchase_stock', 'sale_management', 'sale_stock', 'portal', 'website'],
@@ -9,7 +9,7 @@
              'data/sequence.xml', 'views/backend.xml',
              'views/templates.xml', 'views/supply_configuration.xml',
              'views/commercial_views.xml', 'views/fulfillment_views.xml', 'views/logistics_views.xml',
-             'views/dispatch_views.xml', 'views/purchase_workflow_views.xml',
+             'views/dispatch_views.xml', 'views/purchase_workflow_views.xml', 'views/sales_workflow_views.xml',
              'report/dispatch_templates.xml', 'report/dispatch_note_templates.xml'],
     'assets': {'web.assets_frontend': ['alvina_branch_requisition/static/src/form.js',
                                       'alvina_branch_requisition/static/src/form.css']},

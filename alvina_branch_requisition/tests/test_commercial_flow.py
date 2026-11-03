@@ -305,19 +305,21 @@ class TestCommercialFlow(SupplyCompanyFixture, TransactionCase):
         self.assertEqual(ordinary.state, 'to approve', 'Public context cannot acquire private technical approval')
         self.assertFalse(ordinary.picking_ids)
 
-    def test_confirmation_failure_preserves_draft_pair_without_pickings(self):
+    def test_supplier_confirmation_failure_preserves_confirmed_purchase_and_draft_sale(self):
         record = self._flow(confirm_supply=False)
         purchase = self._as(record.sudo().purchase_order_id, self.requester)
+        purchase.button_confirm()
+        sale = self._as(record.sudo().sale_order_id, self.keeper)
         models = ('alvina.branch.request', 'alvina.branch.request.line',
                   'sale.order', 'purchase.order', 'stock.picking', 'stock.move')
         counts = {model: self.env[model].search_count([]) for model in models}
-        with patch.object(type(self.env['sale.order']), 'action_confirm',
+        with patch.object(type(self.env['sale.order']), '_action_confirm',
                           side_effect=UserError('Controlled fiscal validation failure')):
-            # A failed manual confirmation keeps the submitted RFQ and rolls
-            # back its approval and the generated Inventory operations.
+            # A supplier failure leaves the previously confirmed buyer's OC
+            # and reception intact, with no partial supplier stock operations.
             with self.assertRaisesRegex(UserError, 'Controlled fiscal validation failure'):
-                purchase.button_confirm()
-        self.assertEqual(purchase.state, 'draft')
+                sale.action_confirm()
+        self.assertEqual(purchase.state, 'purchase')
         self.assertEqual(record.sudo().sale_order_id.state, 'draft')
         for model, count in counts.items():
             with self.subTest(model=model):

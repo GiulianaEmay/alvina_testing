@@ -1,13 +1,14 @@
 # Requerimientos de sucursales — Odoo 19
 
-## Flujo de Compras (19.0.3.2.0)
+## Flujo de Compras (19.0.3.3.0)
 
 1. **Compras → Órdenes → Formulario Web** abre una pestaña nueva.
 2. Enviar el formulario registra el requerimiento y una **solicitud de
    cotización en borrador**. No confirma compras, ventas, existencias ni facturas.
 3. La cotización usa las acciones normales de Odoo: **Enviar solicitud de
    cotización**, **Confirmar orden**, **Imprimir** y **Cancelar**.
-4. **Confirmar orden** confirma la compra y su venta de Industria vinculada.
+4. **Confirmar orden** confirma la compra. La venta de Industria vinculada
+   queda como cotización para que Logística la confirme por separado.
    Si la compañía exige doble aprobación, espera al aprobador de Compras; no
    omite ese control. La recepción aparece al confirmar efectivamente la compra.
 5. Dentro de la recepción: **Validar**, **Imprimir** y **Autocompletar cantidades**.
@@ -30,7 +31,7 @@ mantiene las validaciones estándar de cantidades, lotes y números de serie.
 
 ## Historial y actualización
 
-Actualizar `alvina_branch_requisition` a **19.0.3.2.0** después de respaldar la
+Actualizar `alvina_branch_requisition` a **19.0.3.3.0** después de respaldar la
 base de datos y el filestore, y reiniciar Odoo. Por ejemplo:
 
 ```sh
@@ -43,10 +44,30 @@ anteriores conservan su recorrido y las OC confirmadas no vuelven a borrador.
 Las guías históricas de despacho y su confirmación de recepción siguen
 disponibles. No se modifica el flujo de compras ajenas a requerimientos.
 
+## Flujo de Logística
+
+La OV de un requerimiento nuevo ofrece **Enviar**, **Imprimir**, **Confirmar**,
+**Vista previa** y **Cancelar**. Confirmar la compra de la sucursal no confirma
+esta venta ni crea su entrega. Solo **Confirmar** en la OV habilita la entrega.
+La compra de la sucursal debe estar confirmada previamente.
+
+En la entrega pendiente aparecen **Comprobar disponibilidad**, **Validar**,
+**Cancelar** y **Autocompletar cantidades**. Comprobar y autocompletar no validan
+existencias. Se mantienen los controles de stock, lotes y números de serie.
+Los despachos parciales conservan sus saldos en una entrega pendiente.
+
+Después de validar solo aparecen **Imprimir** y **Generar guía**. La guía
+interna valorizada se emite al pulsar ese botón, con lo realmente despachado;
+repetirlo imprime el mismo documento. Generar o reimprimir no vuelve a descontar
+existencias. Una entrega ya validada se conserva aunque falle la emisión del PDF.
+Las OV históricas ya confirmadas no se devuelven a cotización.
+
 Si está instalado el automatismo interempresa de Enterprise, la cotización
 conserva los precios calculados al enviar el formulario. La venta nativa se
-genera al confirmar la compra. Un fallo de confirmación conserva la cotización
-y revierte los documentos y movimientos parciales de ese intento.
+genera al confirmar la compra y queda sin confirmar, incluso si la regla nativa
+intenta confirmarla automáticamente. Un fallo al confirmar la OV conserva la
+compra ya confirmada y revierte las operaciones parciales de ese intento de
+Logística.
 
 ## Desarrollo y pruebas
 

@@ -32,6 +32,8 @@ class BranchRequest(models.Model):
     submission_key = fields.Char(required=True, readonly=True, copy=False)
     manual_purchase_flow = fields.Boolean(readonly=True, copy=False,
         help='Las solicitudes nuevas esperan la confirmación de Compras y se reciben desde su OC.')
+    manual_sale_flow = fields.Boolean(readonly=True, copy=False,
+        help='Logística confirma la OV y emite su guía después de validar la entrega.')
     _submission_unique = models.Constraint('UNIQUE(submission_key)', 'Este formulario ya fue enviado.')
 
     @api.depends('line_ids.price_subtotal', 'line_ids.price_snapshot_set')
@@ -42,7 +44,7 @@ class BranchRequest(models.Model):
 
     def _submission_values(self, branch):
         """Server-only extension point, after identity and assignment checks."""
-        return {'manual_purchase_flow': True}
+        return {'manual_purchase_flow': True, 'manual_sale_flow': True}
 
     @api.model_create_multi
     def create(self, vals_list):

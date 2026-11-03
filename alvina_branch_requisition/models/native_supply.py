@@ -37,6 +37,8 @@ class NativeSupplySale(models.Model):
             commands.append(Command.create(dict(command[2])))
         values.update(scope['sale_header'], order_line=commands,
                       alvina_branch_request_id=request.id)
+        if request.manual_sale_flow:
+            values['state'] = 'draft'
         supplier = request.supply_company_id
         service = self.sudo().with_context(
             allowed_company_ids=supplier.ids, tracking_disable=True,

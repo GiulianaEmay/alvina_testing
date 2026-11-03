@@ -11,8 +11,7 @@ from odoo.tools.safe_eval import safe_eval
 from .test_supply_companies import SupplyCompanyFixture
 
 
-@tagged('post_install', '-at_install')
-class TestPurchaseWorkflow(SupplyCompanyFixture, TransactionCase):
+class ManualSupplyFixture(SupplyCompanyFixture):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -36,6 +35,9 @@ class TestPurchaseWorkflow(SupplyCompanyFixture, TransactionCase):
             'company_id': cls.supply_company.id, 'sales_user_id': cls.keeper.id,
             'pricelist_id': cls.pricelist.id, 'enabled': True})
 
+
+@tagged('post_install', '-at_install')
+class TestPurchaseWorkflow(ManualSupplyFixture, TransactionCase):
     def _draft(self):
         return self._request(product=self.shared_product, quantity=10, confirm_supply=False)
 
@@ -61,7 +63,8 @@ class TestPurchaseWorkflow(SupplyCompanyFixture, TransactionCase):
     def test_explicit_confirmation_creates_receipt_once(self):
         request, purchase, receipt = self._receipt()
         self.assertEqual(purchase.state, 'purchase')
-        self.assertEqual(request.sudo().sale_order_id.state, 'sale')
+        self.assertEqual(request.sudo().sale_order_id.state, 'draft')
+        self.assertFalse(request.sudo().sale_order_id.picking_ids)
         self.assertNotEqual(receipt.state, 'done')
         purchase.button_confirm()
         self.assertEqual(purchase.picking_ids, receipt)
@@ -89,7 +92,7 @@ class TestPurchaseWorkflow(SupplyCompanyFixture, TransactionCase):
         self.assertFalse(purchase.picking_ids)
         self.requester.group_ids = [Command.link(self.env.ref('purchase.group_purchase_manager').id)]
         purchase.button_approve()
-        self.assertEqual((purchase.state, request.sale_order_id.state), ('purchase', 'sale'))
+        self.assertEqual((purchase.state, request.sale_order_id.state), ('purchase', 'draft'))
         self.assertTrue(purchase.picking_ids)
 
     def test_another_branch_cannot_confirm_purchase(self):

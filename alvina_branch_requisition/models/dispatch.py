@@ -273,7 +273,8 @@ class StockPickingDispatch(models.Model):
             picking._alvina_check_dispatch_actor(picking._alvina_outgoing_request())
         result = super()._action_done()
         for picking in supplies.filtered(lambda item: item.state == 'done'):
-            picking._alvina_emit_dispatch()
+            if not picking._alvina_outgoing_request().manual_sale_flow:
+                picking._alvina_emit_dispatch()
         return result
 
     def action_emit_alvina_dispatch(self):

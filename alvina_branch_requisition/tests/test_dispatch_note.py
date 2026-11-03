@@ -77,8 +77,10 @@ class TestDispatchNote(SupplyCompanyFixture, TransactionCase):
     def _shipment(self, requested=10, shipped=8):
         request, picking = self._request_and_picking(requested)
         self._complete(picking, shipped)
+        self.assertFalse(picking.sudo().alvina_emitted_dispatch_ids)
+        self._emit(picking)
         guide = picking.sudo().alvina_emitted_dispatch_ids
-        self.assertEqual(len(guide), 1, 'Completing the shipment must issue its guide automatically')
+        self.assertEqual(len(guide), 1, 'Explicit generation must issue exactly one guide')
         self.assertEqual(self._emit(picking), guide)
         return request, picking, guide
 
@@ -508,18 +510,17 @@ class TestDispatchNote(SupplyCompanyFixture, TransactionCase):
             lambda receipt: receipt.state == 'done'))
         self.assertFalse(request.purchase_order_id.picking_ids.alvina_dispatch_id)
 
-    def test_guide_emission_failure_rolls_back_physical_dispatch(self):
+    def test_guide_emission_failure_keeps_validated_dispatch_unchanged(self):
         request, picking = self._request_and_picking()
         source_stock = self.shared_product.with_context(
             warehouse_id=self.warehouse.id).qty_available
+        self._complete(picking, 8)
         with patch.object(type(self.env['alvina.branch.dispatch']), 'create',
                           side_effect=ValidationError('Simulated guide emission failure')):
-            # The action itself owns atomicity: a failed guide must not leave
-            # a done stock operation, even if its caller catches the exception.
             with self.assertRaises(ValidationError):
-                self._complete(picking, 8)
-        self.assertNotEqual(picking.state, 'done')
+                self._emit(picking)
+        self.assertEqual(picking.state, 'done')
         self.assertFalse(picking.alvina_emitted_dispatch_ids)
-        self.assertEqual(request.line_ids.qty_supplied, 0)
+        self.assertEqual(request.line_ids.qty_supplied, 8)
         self.assertEqual(self.shared_product.with_context(
-            warehouse_id=self.warehouse.id).qty_available, source_stock)
+            warehouse_id=self.warehouse.id).qty_available, source_stock - 8)

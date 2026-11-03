@@ -53,6 +53,9 @@ class TestLogisticsAccess(SupplyCompanyFixture, TransactionCase):
             if record.supply_flow:
                 record.sudo().purchase_order_id.with_user(user).with_context(
                     allowed_company_ids=user.company_ids.ids).button_confirm()
+                sale = record.sudo().sale_order_id
+                sale.with_user(cls.keeper).with_context(
+                    allowed_company_ids=cls.keeper.company_ids.ids).action_confirm()
             return record
 
         # A historical link alone is insufficient: logistics requires the

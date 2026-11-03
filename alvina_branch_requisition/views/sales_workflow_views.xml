@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_logistics_workflow" model="ir.ui.view">
+        <field name="name">sale.order.alvina.logistics.workflow</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="alvina_manual_sale" invisible="True"/>
+                <button name="action_alvina_sale_send" type="object" string="Enviar" invisible="not alvina_manual_sale or state == 'cancel'"/>
+                <button name="action_alvina_sale_print" type="object" string="Imprimir" invisible="not alvina_manual_sale"/>
+                <button name="action_alvina_sale_confirm" type="object" string="Confirmar" class="oe_highlight" invisible="not alvina_manual_sale or state not in ('draft', 'sent')"/>
+                <button name="action_alvina_sale_preview" type="object" string="Vista previa" invisible="not alvina_manual_sale or state == 'cancel'"/>
+                <button name="action_alvina_sale_cancel" type="object" string="Cancelar" invisible="not alvina_manual_sale or state == 'cancel'"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_delivery_logistics_workflow" model="ir.ui.view">
+        <field name="name">stock.picking.alvina.logistics.workflow</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="alvina_sale_delivery" invisible="True"/>
+                <button name="action_alvina_delivery_assign" type="object" string="Comprobar disponibilidad" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_delivery_validate" type="object" string="Validar" class="oe_highlight" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_delivery_cancel" type="object" string="Cancelar" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_delivery_autofill" type="object" string="Autocompletar cantidades" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state in ('draft', 'done', 'cancel')"/>
+                <button name="action_alvina_delivery_print" type="object" string="Imprimir" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state != 'done'"/>
+                <button name="action_alvina_delivery_guide" type="object" string="Generar guía" groups="alvina_branch_requisition.group_keeper" invisible="not alvina_sale_delivery or state != 'done'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

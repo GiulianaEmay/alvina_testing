@@ -105,6 +105,9 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
             self.assertFalse(record.purchase_order_id.picking_ids)
             self.shared_product.list_price = 19
             self._as(record.purchase_order_id, self.requester).button_confirm()
+            self.assertEqual(record.sale_order_id.state, 'draft')
+            self.assertFalse(record.sale_order_id.picking_ids)
+            self._as(record.sale_order_id, self.keeper).action_confirm()
         self.assertEqual(record.sale_order_id.state, 'sale')
         self.assertEqual(record.sale_order_id.order_line.price_unit, 3.5)
         self.assertEqual(record.purchase_order_id.order_line.price_unit, 3.5)
@@ -136,6 +139,16 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
     def test_native_may_confirm_its_generated_sale_before_returning(self):
         with self.native_result(auto_confirm=True):
             record = self.flow()
+        self.assertEqual(record.sale_order_id.state, 'sale')
+        self.assertEqual(len(record.sale_order_id.picking_ids), 1)
+
+    def test_native_automatic_confirmation_waits_for_logistics(self):
+        with self.native_result(auto_confirm=True):
+            record = self.flow(confirm_supply=False)
+            self._as(record.purchase_order_id, self.requester).button_confirm()
+            self.assertEqual(record.sale_order_id.state, 'draft')
+            self.assertFalse(record.sale_order_id.picking_ids)
+            self._as(record.sale_order_id, self.keeper).action_alvina_sale_confirm()
         self.assertEqual(record.sale_order_id.state, 'sale')
         self.assertEqual(len(record.sale_order_id.picking_ids), 1)
 
@@ -210,6 +223,8 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
             self.assertFalse(record.sale_order_id)
             self.requester.group_ids = [Command.link(self.env.ref('purchase.group_purchase_manager').id)]
             self._as(record.purchase_order_id, self.requester).button_approve()
+            self.assertEqual(record.sale_order_id.state, 'draft')
+            self._as(record.sale_order_id, self.keeper).action_confirm()
         self.assertEqual(record.purchase_order_id.state, 'purchase')
         self.assertEqual(record.sale_order_id.state, 'sale')
 
@@ -230,6 +245,7 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
             self.assertEqual(record.sudo().purchase_order_id.state, 'draft')
             self.assertFalse(record.sudo().sale_order_id)
             self._as(record.sudo().purchase_order_id, self.requester).button_confirm()
+            self._as(record.sudo().sale_order_id, self.keeper).action_confirm()
         self.assertEqual(record.read(['name', 'request_date', 'required_date', 'amount_total'])[0], before)
         self.assertEqual(self.counts()['alvina.branch.request'], count)
         self.assertEqual(len(record.sudo().purchase_order_ids), 1)
@@ -260,6 +276,7 @@ class TestNativeSupply(SupplyCompanyFixture, TransactionCase):
         picking = self._as(record.sale_order_id.picking_ids, self.keeper)
         picking.move_ids.write({'quantity': 8, 'picked': True})
         picking.button_validate()
+        picking.action_emit_alvina_dispatch()
         guide = picking.sudo().alvina_emitted_dispatch_ids
         self.assertEqual(len(guide), 1)
         self.assertEqual(guide.snapshot_json['totals']['total'], 28)

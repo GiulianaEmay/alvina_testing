@@ -250,7 +250,7 @@ class BranchRequest(models.Model):
             if scope['seen_lines'] != set(self.line_ids.ids):
                 raise ValidationError(_('La venta nativa no incluye todos los productos solicitados.'))
             scope['phase'] = 'sale'
-            if sale.state in ('draft', 'sent'):
+            if not self.manual_sale_flow and sale.state in ('draft', 'sent'):
                 sale.action_confirm()
             if scope['invalid'] or scope['attempts'] != 1:
                 raise ValidationError(_('El automatismo no produjo una única pareja de compra y venta.'))
@@ -265,7 +265,7 @@ class BranchRequest(models.Model):
                         or not math.isclose(line.discount, expected['discount'], abs_tol=1e-8)
                         or set(line.tax_ids.ids) != set(expected['tax_ids'][0][2])):
                     raise ValidationError(_('La venta nativa cambió los precios o impuestos acordados. Se revierte el envío.'))
-            self._check_confirmed_supply_pair(sale, purchase)
+            self._check_confirmed_supply_pair(sale, purchase, sale_confirmed=not self.manual_sale_flow)
             return sale
         finally:
             NATIVE_SUPPLY.reset(token)
@@ -279,8 +279,9 @@ class BranchRequest(models.Model):
             finally:
                 _AUTOMATED_PURCHASE_APPROVAL.reset(token)
 
-    def _check_confirmed_supply_pair(self, sale, purchase):
-        if (sale.state != 'sale' or purchase.state != 'purchase'
+    def _check_confirmed_supply_pair(self, sale, purchase, sale_confirmed=True):
+        sale_states = ('sale',) if sale_confirmed else ('draft', 'sent')
+        if (sale.state not in sale_states or purchase.state != 'purchase'
                 or sale.alvina_branch_request_id.id != self.id
                 or purchase.alvina_branch_request_id.id != self.id
                 or sale.company_id != self.supply_company_id

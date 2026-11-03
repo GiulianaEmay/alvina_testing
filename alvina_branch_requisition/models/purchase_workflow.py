@@ -73,9 +73,10 @@ class PurchaseOrder(models.Model):
                                     request.supply_company_id)
                             if not sale:
                                 raise ValidationError(_('Falta la venta de Industria vinculada a esta compra.'))
-                            if sale.state in ('draft', 'sent'):
+                            if not request.manual_sale_flow and sale.state in ('draft', 'sent'):
                                 sale.action_confirm()
-                            request._check_confirmed_supply_pair(sale, order)
+                            request._check_confirmed_supply_pair(sale, order,
+                                sale_confirmed=not request.manual_sale_flow)
                 finally:
                     PURCHASE_CONFIRMATION.reset(token)
         return result

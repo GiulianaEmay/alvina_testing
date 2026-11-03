@@ -108,6 +108,9 @@ class SupplyCompanyFixture:
             record = self._as(self.env['alvina.branch.request'], user).create(values)
             if confirm_supply and record.supply_flow:
                 self._as(record.sudo().purchase_order_id, user).button_confirm()
+                sale = record.sudo().sale_order_id
+                if record.sudo().purchase_order_id.state == 'purchase' and sale.state in ('draft', 'sent'):
+                    self._as(sale, sale.user_id).action_confirm()
             return record
 
 

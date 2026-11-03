@@ -222,6 +222,7 @@ class TestBranchFulfillment(SupplyCompanyFixture, TransactionCase):
         request = self._flow_request()
         outgoing = self._outgoing(request)
         self._complete(outgoing, 15)
+        self._as(outgoing, self.keeper).action_emit_alvina_dispatch()
         receipt = request.purchase_order_id.picking_ids
         self.assertEqual(len(receipt), 1)
         self.assertNotEqual(receipt.state, 'done')
